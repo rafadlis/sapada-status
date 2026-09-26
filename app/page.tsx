@@ -69,7 +69,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
           </div>
           <div className="overview-grid">
             <div className="uptime-number"><strong>{data.uptime === null ? "—" : `${data.uptime.toFixed(2)}%`}</strong><span>Pemeriksaan berhasil</span></div>
-            <div className="uptime-chart" aria-label={`Riwayat pemeriksaan ${range.label} terakhir`}>
+            <div className={`uptime-chart ${range.key === "60m" ? "chart-minute" : ""}`} aria-label={`Riwayat pemeriksaan ${range.label} terakhir`}>
               <div className="day-bars" style={{ gridTemplateColumns: `repeat(${range.buckets}, minmax(0, 1fr))` }}>{buckets.map((bucket, index) => {
                 const bucketStart = new Date(start + index * bucketMs);
                 const bucketEnd = new Date(start + (index + 1) * bucketMs);
@@ -84,10 +84,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
                   <div className="bucket-popover"><strong>{period}</strong><span>{summary}</span>{failure && <><span>Gangguan terakhir: {failureTime}</span><span>{errorDetail}</span></>}{bucket.count > 0 && <Link className="bucket-detail-link" href={`/checks?from=${bucketStart.getTime()}&to=${bucketEnd.getTime()}&range=${range.key}`} prefetch={false}>Lihat semua pemeriksaan</Link>}</div>
                 </details>;
               })}</div>
-              <div className="chart-labels"><span>{range.label} lalu</span><span>Sekarang</span></div>
+              <div className="chart-labels"><span>{range.label} lalu</span><span>1 batang = {range.bucketLabel}</span><span>Sekarang</span></div>
+              <div className="chart-legend"><span><i className="legend-good" aria-hidden="true" />Berhasil</span><span><i className="legend-failed" aria-hidden="true" />Gagal</span><span><i className="legend-empty" aria-hidden="true" />Belum diperiksa</span></div>
             </div>
           </div>
-          <p className="overview-footnote">Arahkan kursor atau ketuk batang untuk melihat waktu dan detail pemeriksaan. Persentase dihitung dari {data.history.length.toLocaleString("id-ID")} pemeriksaan yang tercatat. Bagian tanpa data tidak dihitung sebagai waktu aktif. Halaman diperbarui otomatis setiap menit saat terbuka.</p>
+          <p className="overview-footnote">Arahkan kursor atau ketuk batang untuk melihat waktu dan detail pemeriksaan. Warna menunjukkan hasil, bukan lama gangguan. Persentase dihitung dari {data.history.length.toLocaleString("id-ID")} pemeriksaan yang tercatat. Bagian tanpa data tidak dihitung sebagai waktu aktif. Halaman diperbarui otomatis setiap menit saat terbuka.</p>
         </section>
 
         <section className="incidents-section" aria-labelledby="incidents-title">
