@@ -19,7 +19,7 @@ export function formatCheckResult(check: CheckResult) {
     return `SAPADA merespons dengan HTTP ${check.statusCode}${check.latencyMs === null ? "" : ` · ${check.latencyMs.toLocaleString("id-ID")} ms`}`;
   }
   if (timedOut(check)) {
-    return "Pemeriksaan ke SAPADA tidak mendapat respons dalam 10 detik. Penyebabnya belum dapat dipastikan.";
+    return "Pemeriksaan ke SAPADA tidak mendapat respons dalam 10 detik.";
   }
-  return "Pemeriksaan gagal terhubung ke SAPADA. Penyebabnya belum dapat dipastikan.";
+  return "Pemeriksaan gagal terhubung ke SAPADA.";
 }
