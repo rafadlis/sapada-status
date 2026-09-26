@@ -14,6 +14,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
   const now = new Date();
   const data = await getStatusData(range.durationMs, now);
   const active = data.incidents.filter((incident) => incident.state !== "resolved");
+  const resolved = data.incidents.filter((incident) => incident.state === "resolved").slice(0, 3);
   const hasIncident = active.some((incident) => incident.kind !== "maintenance");
   const state = hasIncident || data.state === "degraded" ? "degraded" : data.state;
   const copy = state === "degraded" ? { title: "Gangguan layanan terdeteksi", detail: "SAPADA sedang mengalami gangguan. Lihat pembaruan pengelola dan hasil pemeriksaan di bawah." }
@@ -34,9 +35,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
       </div>
     </section>
 
-    <section className="section" aria-labelledby="recent-title"><div className="section-title"><div><span className="eyebrow">CATATAN PENGELOLA</span><h2 id="recent-title">Pembaruan terbaru</h2></div><Link className="text-link" href="/history">Lihat riwayat →</Link></div>
-      {data.incidents.length ? <div className="incident-stack">{data.incidents.filter((incident) => incident.state === "resolved").slice(0, 3).map((incident) => <IncidentCard incident={incident} key={incident.id} compact />)}{data.incidents.every((incident) => incident.state !== "resolved") && <p className="muted-box">Semua informasi terbaru sedang berlangsung. Baca kronologi di atas.</p>}</div> : <p className="muted-box">Belum ada pembaruan dari pengelola.</p>}
-    </section>
+    {resolved.length > 0 && <section className="section" aria-labelledby="recent-title"><div className="section-title"><div><span className="eyebrow">CATATAN PENGELOLA</span><h2 id="recent-title">Riwayat terbaru</h2></div><Link className="text-link" href="/history">Lihat semua →</Link></div><div className="incident-stack">{resolved.map((incident) => <IncidentCard incident={incident} key={incident.id} compact />)}</div></section>}
     <p className="site-disclaimer">Pemeriksaan otomatis dijadwalkan setiap lima menit. Status menjadi belum diketahui jika hasil terbaru berusia lebih dari 20 menit. Catatan pengelola memberikan konteks saat layanan terganggu.</p>
   </main><SiteFooter /></div>;
 }
