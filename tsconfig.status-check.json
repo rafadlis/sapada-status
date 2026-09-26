@@ -6,6 +6,7 @@
   "files": [
     "app/page.tsx",
     "app/admin/page.tsx",
+    "app/checks/page.tsx",
     "app/api/check/route.ts",
     "app/api/admin/login/route.ts",
     "app/api/admin/logout/route.ts",

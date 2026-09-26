@@ -72,13 +72,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
                 const bucketEnd = new Date(start + (index + 1) * bucketMs);
                 const period = `${formatJakarta(bucketStart, { dateStyle: "medium", timeStyle: "short" })}–${formatJakarta(bucketEnd, { timeStyle: "short" })} WIB`;
                 const failure = bucket.latestFailure;
-                const failureTime = failure ? `${formatJakarta(failure.checkedAt, { dateStyle: "medium", timeStyle: "short" })} WIB` : null;
+                const failureTime = failure ? `${formatJakarta(failure.checkedAt, { dateStyle: "medium", hour: "2-digit", minute: "2-digit", second: "2-digit" })} WIB` : null;
                 const errorDetail = failure ? failure.error || (failure.statusCode ? `HTTP ${failure.statusCode}` : "Gagal mengakses layanan") : null;
                 const summary = bucket.count === 0 ? "Belum ada pemeriksaan" : bucket.failedCount ? `${bucket.failedCount} dari ${bucket.count} pemeriksaan gagal` : `${bucket.count} pemeriksaan berhasil`;
                 const label = `${period}: ${summary}${failureTime ? `. Gangguan terakhir ${failureTime}: ${errorDetail}` : ""}`;
                 return <details key={index} name="history-check" className={`history-bucket ${index >= range.buckets / 2 ? "bucket-right" : ""}`}>
                   <summary className={`day-bar ${bucket.count === 0 ? "day-empty" : bucket.failedCount ? "day-failed" : "day-good"}`} aria-label={label} title={label} />
-                  <div className="bucket-popover"><strong>{period}</strong><span>{summary}</span>{failure && <><span>Gangguan terakhir: {failureTime}</span><span>{errorDetail}{failure.latencyMs !== null ? ` · ${failure.latencyMs.toLocaleString("id-ID")} ms` : ""}</span></>}</div>
+                  <div className="bucket-popover"><strong>{period}</strong><span>{summary}</span>{failure && <><span>Gangguan terakhir: {failureTime}</span><span>{errorDetail}{failure.latencyMs !== null ? ` · ${failure.latencyMs.toLocaleString("id-ID")} ms` : ""}</span></>}{bucket.count > 0 && <Link className="bucket-detail-link" href={`/checks?from=${bucketStart.getTime()}&to=${bucketEnd.getTime()}&range=${range.key}`} prefetch={false}>Lihat semua pemeriksaan</Link>}</div>
                 </details>;
               })}</div>
               <div className="chart-labels"><span>{range.label} lalu</span><span>Sekarang</span></div>
