@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import Link from "next/link";
+import { StatusMark } from "@/components/status-mark";
 import { isAdmin } from "@/lib/auth";
 import { getStatusData, formatJakarta } from "@/lib/status";
 
@@ -11,7 +12,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
   return (
     <main className="admin-shell">
-      <div className="admin-top"><Link className="brand-word" href="/">SAPADA<span> / Status</span></Link><Link href="/">Lihat halaman publik</Link></div>
+        <div className="admin-top"><Link className="brand-word" href="/"><StatusMark className="admin-brand-symbol" />SAPADA<span> / Status</span></Link><Link href="/">Lihat halaman publik</Link></div>
       <section className="admin-content">
         <p className="kicker">Pengelolaan status</p>
         <h1>{authorized ? "Informasi gangguan" : "Masuk sebagai pengelola"}</h1>

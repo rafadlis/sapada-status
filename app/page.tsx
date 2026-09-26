@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import Link from "next/link";
+import { StatusMark } from "@/components/status-mark";
 import { getHistoryRange, historyRanges } from "@/lib/history-range";
 import { formatJakarta, getStatusData } from "@/lib/status";
 
@@ -36,7 +37,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
       <header className="site-header">
         <div className="container header-inner">
           <Link className="brand" href="/" aria-label="SAPADA Status, beranda">
-            <span className="brand-symbol" aria-hidden="true"><span /><span /><span /></span>
+            <StatusMark className="brand-symbol" />
             <span className="brand-copy"><strong>SAPADA</strong><small>Status layanan</small></span>
           </Link>
           <a className="header-link" href="https://sapada.bapenda.garutkab.go.id/" target="_blank" rel="noreferrer">Buka SAPADA <span aria-hidden="true">↗</span></a>
