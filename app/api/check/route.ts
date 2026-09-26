@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/db";
 import { checks } from "@/lib/db/schema";
+import { checkTimeoutMs } from "@/lib/check-result";
 
 export const runtime = "nodejs";
 
@@ -30,7 +31,7 @@ async function runCheck() {
     const response = await fetch("https://sapada.bapenda.garutkab.go.id/", {
       cache: "no-store",
       redirect: "manual",
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(checkTimeoutMs),
       headers: { "user-agent": "SAPADA-Status-Monitor/1.0" },
     });
     statusCode = response.status;

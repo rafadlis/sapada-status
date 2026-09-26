@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import Link from "next/link";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { StatusMark } from "@/components/status-mark";
+import { formatCheckResult } from "@/lib/check-result";
 import { getHistoryRange, historyRanges } from "@/lib/history-range";
 import { formatJakarta, getStatusData } from "@/lib/status";
 
@@ -55,7 +56,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
           </div>
           <div className={`status-panel status-${copy.tone}`} role="status">
             <div className="status-panel-top"><span>Kondisi saat ini</span><span className="live-label"><span className="live-dot" />Hasil pemantauan</span></div>
-            <div className="status-main"><span className="status-orb" aria-hidden="true" /><div><h2>{copy.label}</h2><p>{copy.detail}</p>{data.latest && !data.latest.ok && <p className="status-error">Detail pemeriksaan: {data.latest.error || (data.latest.statusCode ? `HTTP ${data.latest.statusCode}` : "Gagal mengakses layanan")}{data.latest.latencyMs !== null ? ` · ${data.latest.latencyMs.toLocaleString("id-ID")} ms` : ""}</p>}</div></div>
+            <div className="status-main"><span className="status-orb" aria-hidden="true" /><div><h2>{copy.label}</h2><p>{copy.detail}</p>{data.latest && !data.latest.ok && <p className="status-error">{formatCheckResult(data.latest)}</p>}</div></div>
             <div className="status-panel-bottom"><span>Pemeriksaan terakhir</span><strong>{data.latest ? `${formatJakarta(data.latest.checkedAt, { dateStyle: "medium", timeStyle: "short" })} WIB` : "Belum tersedia"}</strong></div>
           </div>
         </section>
@@ -75,12 +76,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
                 const period = `${formatJakarta(bucketStart, { dateStyle: "medium", timeStyle: "short" })}–${formatJakarta(bucketEnd, { timeStyle: "short" })} WIB`;
                 const failure = bucket.latestFailure;
                 const failureTime = failure ? `${formatJakarta(failure.checkedAt, { dateStyle: "medium", timeStyle: "medium" })} WIB` : null;
-                const errorDetail = failure ? failure.error || (failure.statusCode ? `HTTP ${failure.statusCode}` : "Gagal mengakses layanan") : null;
+                const errorDetail = failure ? formatCheckResult(failure) : null;
                 const summary = bucket.count === 0 ? "Belum ada pemeriksaan" : bucket.failedCount ? `${bucket.failedCount} dari ${bucket.count} pemeriksaan gagal` : `${bucket.count} pemeriksaan berhasil`;
                 const label = `${period}: ${summary}${failureTime ? `. Gangguan terakhir ${failureTime}: ${errorDetail}` : ""}`;
                 return <details key={index} name="history-check" className={`history-bucket ${index >= range.buckets / 2 ? "bucket-right" : ""}`}>
                   <summary className={`day-bar ${bucket.count === 0 ? "day-empty" : bucket.failedCount ? "day-failed" : "day-good"}`} aria-label={label} title={label} />
-                  <div className="bucket-popover"><strong>{period}</strong><span>{summary}</span>{failure && <><span>Gangguan terakhir: {failureTime}</span><span>{errorDetail}{failure.latencyMs !== null ? ` · ${failure.latencyMs.toLocaleString("id-ID")} ms` : ""}</span></>}{bucket.count > 0 && <Link className="bucket-detail-link" href={`/checks?from=${bucketStart.getTime()}&to=${bucketEnd.getTime()}&range=${range.key}`} prefetch={false}>Lihat semua pemeriksaan</Link>}</div>
+                  <div className="bucket-popover"><strong>{period}</strong><span>{summary}</span>{failure && <><span>Gangguan terakhir: {failureTime}</span><span>{errorDetail}</span></>}{bucket.count > 0 && <Link className="bucket-detail-link" href={`/checks?from=${bucketStart.getTime()}&to=${bucketEnd.getTime()}&range=${range.key}`} prefetch={false}>Lihat semua pemeriksaan</Link>}</div>
                 </details>;
               })}</div>
               <div className="chart-labels"><span>{range.label} lalu</span><span>Sekarang</span></div>

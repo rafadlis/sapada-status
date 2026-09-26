@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import Link from "next/link";
 import { and, desc, gte, lt } from "drizzle-orm";
 import { StatusMark } from "@/components/status-mark";
+import { formatCheckResult } from "@/lib/check-result";
 import { getDb } from "@/lib/db";
 import { checks } from "@/lib/db/schema";
 import { getHistoryRange } from "@/lib/history-range";
@@ -72,7 +73,7 @@ export default async function ChecksPage({ searchParams }: { searchParams: Promi
               : <div className="check-list">{rows.map((check) => (
                 <article className="check-row" key={check.id}>
                   <div><time dateTime={check.checkedAt.toISOString()}>{formatJakarta(check.checkedAt, { dateStyle: "medium", timeStyle: "medium" })} WIB</time><span className={`check-result ${check.ok ? "check-ok" : "check-failed"}`}>{check.ok ? "Berhasil" : "Gagal"}</span></div>
-                  <p>{check.ok ? `HTTP ${check.statusCode ?? "berhasil"}` : check.error || (check.statusCode ? `HTTP ${check.statusCode}` : "Gagal mengakses layanan")}{check.latencyMs !== null ? ` · ${check.latencyMs.toLocaleString("id-ID")} ms` : ""}</p>
+                  <p>{formatCheckResult(check)}</p>
                 </article>
               ))}</div>}
         {valid && !unavailable && (requestedPage > 1 || hasNext) && <nav className="check-pagination" aria-label="Halaman riwayat pemeriksaan">
