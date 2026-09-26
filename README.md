@@ -23,4 +23,4 @@ GitHub scheduled workflows can run late or be skipped under load. GitHub also di
 
 ## Domain
 
-Add `status.sapada.bapenda.garutkab.go.id` to the Vercel project. The domain administrator must add the DNS record shown by Vercel before the public address will work.
+The domain is attached to the Vercel project. Its DNS administrator must add an `A` record for `status.sapada.bapenda.garutkab.go.id` pointing to `76.76.21.21`. The authoritative nameservers are on Cloudflare, so create the record there with the proxy disabled (DNS only). After propagation, check the domain and certificate in Vercel.
