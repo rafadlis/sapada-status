@@ -15,8 +15,10 @@ function dayKey(date: Date) {
 export default async function Home() {
   await connection();
   const data = await getStatusData();
-  const copy = statusCopy[data.state];
   const openIncidents = data.incidents.filter((incident) => incident.state !== "resolved");
+  const copy = openIncidents.length
+    ? { label: "Gangguan sedang ditangani", detail: "Baca pembaruan pengelola di bawah untuk informasi terbaru.", tone: "bad" }
+    : statusCopy[data.state];
   const now = new Date();
   const checksByDay = new Map<string, { count: number; failed: boolean }>();
   for (const check of data.history) {

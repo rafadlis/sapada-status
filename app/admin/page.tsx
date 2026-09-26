@@ -3,8 +3,9 @@ import Link from "next/link";
 import { isAdmin } from "@/lib/auth";
 import { getStatusData, formatJakarta } from "@/lib/status";
 
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ error?: string; created?: string; updated?: string }> }) {
   await connection();
+  const params = await searchParams;
   const authorized = await isAdmin();
   const data = authorized ? await getStatusData() : null;
 
@@ -14,6 +15,9 @@ export default async function AdminPage() {
       <section className="admin-content">
         <p className="kicker">Pengelolaan status</p>
         <h1>{authorized ? "Informasi gangguan" : "Masuk sebagai pengelola"}</h1>
+        {params.error === "login" && !authorized && <p className="form-feedback form-error" role="alert">Kata sandi tidak sesuai. Coba lagi.</p>}
+        {params.error === "validation" && authorized && <p className="form-feedback form-error" role="alert">Isi judul dan penjelasan sesuai batas karakter.</p>}
+        {(params.created === "1" || params.updated === "1") && authorized && <p className="form-feedback form-success" role="status">Informasi gangguan berhasil diperbarui.</p>}
         {!authorized ? (
           <form className="admin-form" action="/api/admin/login" method="post">
             <p>Masukkan kata sandi pengelola untuk menerbitkan pembaruan layanan.</p>
