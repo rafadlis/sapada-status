@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false
+  },
+  "files": [
+    "app/page.tsx",
+    "app/admin/page.tsx",
+    "app/api/check/route.ts",
+    "app/api/admin/login/route.ts",
+    "app/api/admin/logout/route.ts",
+    "app/api/admin/incidents/route.ts",
+    "app/api/admin/incidents/[id]/route.ts",
+    "lib/auth.ts",
+    "lib/status.ts",
+    "lib/db/index.ts",
+    "lib/db/schema.ts",
+    "drizzle.config.ts"
+  ],
+  "include": []
+}

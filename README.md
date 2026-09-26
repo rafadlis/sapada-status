@@ -1,36 +1,26 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Status SAPADA
 
-## Getting Started
+Public status page for `sapada.bapenda.garutkab.go.id`, hosted at `status.sapada.bapenda.garutkab.go.id`.
 
-First, run the development server:
+The page shows the most recent HTTP check, a 30 day history, and incident updates written by an administrator. A failed check marks the service as disrupted. If no check has arrived in 20 minutes, the page shows an unknown state rather than claiming that the service is healthy.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Setup
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Install dependencies with `bun install`.
+2. Copy `.env.example` to `.env.local` and set the Neon connection strings and secrets.
+3. Apply the Drizzle migrations with `bunx drizzle-kit migrate`.
+4. Run `bun run lint -- app lib` to check the app code. The `@shadcn/lint` plugin is registered in `eslint.config.mjs`; no design rules are enabled yet. Choose rules from the [rule list](https://github.com/shadcn-ui/lint#rules) and add them to that config.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`DATABASE_URL` is the pooled Neon URL used by the app. `DATABASE_URL_UNPOOLED` is the direct URL used for migrations. Keep both out of Git.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Monitoring and incidents
 
-## Learn More
+The GitHub Actions workflow calls `POST /api/check` every five minutes. Configure `MONITOR_TOKEN` as both a GitHub Actions repository secret and a Vercel environment variable, and set the `STATUS_URL` repository variable to the Vercel production URL. The endpoint measures a request to SAPADA, records the result in Neon, and returns the result as JSON. A workflow run can also be triggered manually.
 
-To learn more about Next.js, take a look at the following resources:
+Open `/admin` and sign in with `ADMIN_PASSWORD` to publish an incident or mark one resolved. The page requires `SESSION_SECRET` to sign its session cookie. Only the public incident text and timestamps appear on the status page.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+GitHub scheduled workflows can run late or be skipped under load. The public page marks monitoring as unknown when results stop arriving. The status site and its database must be reachable for checks to be saved.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Domain
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Add `status.sapada.bapenda.garutkab.go.id` to the Vercel project. The domain administrator must add the DNS record shown by Vercel before the public address will work.
