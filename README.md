@@ -19,7 +19,7 @@ The GitHub Actions workflow calls `POST /api/check` every five minutes. Configur
 
 Open `/admin` and sign in with `ADMIN_PASSWORD` to publish an incident or mark one resolved. The page requires `SESSION_SECRET` to sign its session cookie. Only the public incident text and timestamps appear on the status page.
 
-GitHub scheduled workflows can run late or be skipped under load. The public page marks monitoring as unknown when results stop arriving. The status site and its database must be reachable for checks to be saved.
+GitHub scheduled workflows can run late or be skipped under load. GitHub also disables scheduled workflows in public repositories after 60 days without repository activity. Check the workflow periodically or move scheduling to a dedicated uptime service for long-term operation. The public page marks monitoring as unknown when results stop arriving. The status site and its database must be reachable for checks to be saved.
 
 ## Domain
 

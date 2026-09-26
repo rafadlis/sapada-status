@@ -83,7 +83,7 @@ export default async function Home() {
           ))}</div> : <div className="empty-incidents"><span className="empty-icon" aria-hidden="true">✓</span><div><h3>Belum ada informasi gangguan</h3><p>Pembaruan dari pengelola layanan akan tampil di sini.</p></div></div>}
         </section>
 
-        <aside className="about-service"><div><p className="kicker">Tentang halaman ini</p><h2>Satu tempat untuk mengetahui kondisi SAPADA.</h2></div><p>Pemeriksaan otomatis dilakukan setiap lima menit. Pengelola dapat menerbitkan penjelasan ketika layanan terganggu. Jika pemeriksaan berhenti lebih dari 20 menit, status akan ditandai belum dapat dipastikan.</p></aside>
+        <aside className="about-service"><div><p className="kicker">Tentang halaman ini</p><h2>Satu tempat untuk mengetahui kondisi SAPADA.</h2></div><p>Pemeriksaan otomatis dijadwalkan setiap lima menit. Pengelola dapat menerbitkan penjelasan ketika layanan terganggu. Jika pemeriksaan berhenti lebih dari 20 menit, status akan ditandai belum dapat dipastikan.</p></aside>
       </main>
       <footer className="site-footer"><div className="container footer-inner"><span>© {now.getFullYear()} SAPADA · Bapenda Kabupaten Garut</span><span>Waktu ditampilkan dalam WIB</span></div></footer>
     </div>
