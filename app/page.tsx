@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import Link from "next/link";
+import { AutoRefresh } from "@/components/auto-refresh";
 import { StatusMark } from "@/components/status-mark";
 import { getHistoryRange, historyRanges } from "@/lib/history-range";
 import { formatJakarta, getStatusData } from "@/lib/status";
@@ -34,6 +35,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
 
   return (
     <div className="site-shell">
+      <AutoRefresh />
       <header className="site-header">
         <div className="container header-inner">
           <Link className="brand" href="/" aria-label="SAPADA Status, beranda">
@@ -84,7 +86,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
               <div className="chart-labels"><span>{range.label} lalu</span><span>Sekarang</span></div>
             </div>
           </div>
-          <p className="overview-footnote">Arahkan kursor atau ketuk batang untuk melihat waktu dan detail pemeriksaan. Persentase dihitung dari {data.history.length.toLocaleString("id-ID")} pemeriksaan yang tercatat. Bagian tanpa data tidak dihitung sebagai waktu aktif.</p>
+          <p className="overview-footnote">Arahkan kursor atau ketuk batang untuk melihat waktu dan detail pemeriksaan. Persentase dihitung dari {data.history.length.toLocaleString("id-ID")} pemeriksaan yang tercatat. Bagian tanpa data tidak dihitung sebagai waktu aktif. Halaman diperbarui otomatis setiap menit saat terbuka.</p>
         </section>
 
         <section className="incidents-section" aria-labelledby="incidents-title">
