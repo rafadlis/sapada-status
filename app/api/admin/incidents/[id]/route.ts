@@ -1,7 +1,8 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { isAdmin, sameOrigin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { incidents } from "@/lib/db/schema";
+import { isValidIncidentState } from "@/lib/incident";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   if (!sameOrigin(request)) return new Response("Forbidden", { status: 403 });
@@ -10,12 +11,20 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const incidentId = Number(id);
   if (!Number.isSafeInteger(incidentId) || incidentId < 1) return new Response("Invalid incident", { status: 400 });
   const form = await request.formData();
-  const action = String(form.get("action") ?? "");
-  if (action !== "resolve" && action !== "reopen") return new Response("Invalid action", { status: 400 });
-  await getDb().update(incidents).set({
-    state: action === "resolve" ? "resolved" : "investigating",
-    resolvedAt: action === "resolve" ? new Date() : null,
-    updatedAt: new Date(),
-  }).where(eq(incidents.id, incidentId));
+  const state = String(form.get("state") ?? "");
+  const message = String(form.get("message") ?? "").trim();
+  const db = getDb();
+  const [incident] = await db.select().from(incidents).where(eq(incidents.id, incidentId)).limit(1);
+  if (!incident) return new Response("Incident not found", { status: 404 });
+  if (!isValidIncidentState(incident.kind === "maintenance" ? "maintenance" : "incident", state)
+    || !message || message.length > 2000) {
+    return Response.redirect(new URL("/admin?error=validation", request.url), 303);
+  }
+  const updatedAt = new Date();
+  await db.execute(sql`WITH changed AS (
+    UPDATE incidents SET state = ${state}, updated_at = ${updatedAt}, resolved_at = ${state === "resolved" ? updatedAt : null}
+    WHERE id = ${incidentId} RETURNING id
+  ) INSERT INTO incident_updates (incident_id, state, message, created_at)
+    SELECT id, ${state}, ${message}, ${updatedAt} FROM changed`);
   return Response.redirect(new URL("/admin?updated=1", request.url), 303);
 }

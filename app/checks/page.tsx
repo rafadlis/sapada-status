@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import Link from "next/link";
 import { and, desc, gte, lt } from "drizzle-orm";
-import { StatusMark } from "@/components/status-mark";
+import { SiteFooter, SiteHeader } from "@/components/site-header";
 import { formatCheckResult } from "@/lib/check-result";
 import { getDb } from "@/lib/db";
 import { checks } from "@/lib/db/schema";
@@ -58,12 +58,10 @@ export default async function ChecksPage({ searchParams }: { searchParams: Promi
   const pageHref = (page: number) => `/checks?from=${from}&to=${to}&range=${range.key}&page=${page}`;
 
   return (
-    <div className="site-shell">
-      <header className="site-header"><div className="container header-inner">
-        <Link className="brand" href="/"><StatusMark className="brand-symbol" /><span className="brand-copy"><strong>SAPADA</strong><small>Status layanan</small></span></Link>
-        <Link className="header-link" href={backHref}>Kembali ke status</Link>
-      </div></header>
-      <main className="container check-detail-page">
+    <div className="status-site">
+      <SiteHeader />
+      <main className="site-width check-detail-page">
+        <Link className="back-link" href={backHref}>← Kembali ke status</Link>
         <p className="kicker">Riwayat pemantauan</p>
         <h1>Detail pemeriksaan</h1>
         {period && <p className="check-period">{period}</p>}
@@ -81,7 +79,7 @@ export default async function ChecksPage({ searchParams }: { searchParams: Promi
           <span>Halaman {requestedPage}</span>
           {hasNext && <Link href={pageHref(requestedPage + 1)} prefetch={false}>Pemeriksaan lebih lama</Link>}
         </nav>}
-      </main>
+      </main><SiteFooter />
     </div>
   );
 }

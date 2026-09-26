@@ -1,59 +1,26 @@
 import { connection } from "next/server";
 import Link from "next/link";
-import { StatusMark } from "@/components/status-mark";
+import { SiteHeader } from "@/components/site-header";
 import { isAdmin } from "@/lib/auth";
-import { getStatusData, formatJakarta } from "@/lib/status";
+import { formatJakarta, getStatusData } from "@/lib/status";
+import { kindLabel, stateLabel } from "@/lib/incident";
 
 export default async function AdminPage({ searchParams }: { searchParams: Promise<{ error?: string; created?: string; updated?: string }> }) {
   await connection();
   const params = await searchParams;
   const authorized = await isAdmin();
   const data = authorized ? await getStatusData() : null;
-
-  return (
-    <main className="admin-shell">
-        <div className="admin-top"><Link className="brand-word" href="/"><StatusMark className="admin-brand-symbol" />SAPADA<span> / Status</span></Link><Link href="/">Lihat halaman publik</Link></div>
-      <section className="admin-content">
-        <p className="kicker">Pengelolaan status</p>
-        <h1>{authorized ? "Informasi gangguan" : "Masuk sebagai pengelola"}</h1>
-        {params.error === "login" && !authorized && <p className="form-feedback form-error" role="alert">Kata sandi tidak sesuai. Coba lagi.</p>}
-        {params.error === "validation" && authorized && <p className="form-feedback form-error" role="alert">Isi judul dan penjelasan sesuai batas karakter.</p>}
-        {(params.created === "1" || params.updated === "1") && authorized && <p className="form-feedback form-success" role="status">Informasi gangguan berhasil diperbarui.</p>}
-        {!authorized ? (
-          <form className="admin-form" action="/api/admin/login" method="post">
-            <p>Masukkan kata sandi pengelola untuk menerbitkan pembaruan layanan.</p>
-            <label htmlFor="password">Kata sandi</label>
-            <input id="password" name="password" type="password" autoComplete="current-password" required />
-            <button type="submit">Masuk</button>
-          </form>
-        ) : (
-          <>
-            <p>Pemeriksaan otomatis menunjukkan kondisi layanan. Gunakan catatan ini untuk menjelaskan gangguan kepada publik.</p>
-            <form className="admin-form" action="/api/admin/incidents" method="post">
-              <h2>Terbitkan informasi baru</h2>
-              <label htmlFor="title">Judul</label>
-              <input id="title" name="title" maxLength={120} placeholder="Contoh: Gangguan akses SAPADA" required />
-              <label htmlFor="message">Penjelasan untuk publik</label>
-              <textarea id="message" name="message" rows={5} maxLength={2000} placeholder="Jelaskan dampak dan langkah penanganan yang sedang dilakukan." required />
-              <button type="submit">Terbitkan informasi</button>
-            </form>
-            <h2>Informasi sebelumnya</h2>
-            <div className="admin-incidents">
-              {data?.incidents.length ? data.incidents.map((incident) => (
-                <article className="admin-incident" key={incident.id}>
-                  <div><strong>{incident.title}</strong><span>{formatJakarta(incident.createdAt, { dateStyle: "medium", timeStyle: "short" })} WIB</span></div>
-                  <p>{incident.message}</p>
-                  <form action={`/api/admin/incidents/${incident.id}`} method="post">
-                    <input type="hidden" name="action" value={incident.state === "resolved" ? "reopen" : "resolve"} />
-                    <button className="button-secondary" type="submit">{incident.state === "resolved" ? "Buka kembali" : "Tandai selesai"}</button>
-                  </form>
-                </article>
-              )) : <p>Belum ada informasi gangguan.</p>}
-            </div>
-            <form action="/api/admin/logout" method="post"><button className="button-text" type="submit">Keluar</button></form>
-          </>
-        )}
-      </section>
-    </main>
-  );
+  return <div className="status-site"><SiteHeader /><main className="site-width subpage-main admin-main">
+    <span className="eyebrow">PENGELOLA SAPADA</span><h1>{authorized ? "Kelola pembaruan" : "Masuk sebagai pengelola"}</h1>
+    {params.error === "login" && !authorized && <p className="form-feedback form-error" role="alert">Kata sandi tidak sesuai. Coba lagi.</p>}
+    {params.error === "validation" && authorized && <p className="form-feedback form-error" role="alert">Lengkapi judul dan catatan publik sesuai batas karakter, lalu pilih tahap yang tersedia.</p>}
+    {(params.created === "1" || params.updated === "1") && authorized && <p className="form-feedback form-success" role="status">Pembaruan telah diterbitkan.</p>}
+    {!authorized ? <form className="admin-form" action="/api/admin/login" method="post"><p>Masukkan kata sandi untuk menerbitkan informasi layanan.</p><label htmlFor="password">Kata sandi</label><input id="password" name="password" type="password" autoComplete="current-password" required /><button type="submit">Masuk</button></form>
+      : <><p className="page-description">Beri konteks saat pemantauan mendeteksi gangguan. Setiap perubahan tahap disertai catatan yang muncul dalam kronologi publik.</p>
+        <div className="admin-monitor"><div><span className={`service-dot dot-${data?.state}`} /><strong>{data?.state === "operational" ? "Layanan dapat diakses" : data?.state === "degraded" ? "Pemeriksaan gagal" : "Status belum diketahui"}</strong></div><span>{data?.latest ? `Pemeriksaan ${formatJakarta(data.latest.checkedAt, { dateStyle: "medium", timeStyle: "medium" })} WIB` : "Belum ada pemeriksaan"}</span></div>
+        <section className="admin-section"><h2>Terbitkan informasi baru</h2><form className="admin-form" action="/api/admin/incidents" method="post"><label htmlFor="kind">Jenis informasi</label><select id="kind" name="kind" defaultValue="incident"><option value="incident">Gangguan</option><option value="maintenance">Pemeliharaan terjadwal</option></select><p className="form-hint">Gangguan dimulai pada tahap “Sedang diselidiki”. Pemeliharaan dimulai pada tahap “Dijadwalkan”.</p><label htmlFor="title">Judul</label><input id="title" name="title" maxLength={120} placeholder="Contoh: Akses SAPADA terganggu" required /><label htmlFor="message">Catatan untuk publik</label><textarea id="message" name="message" rows={5} maxLength={2000} placeholder="Jelaskan dampak, penyebab jika diketahui, dan langkah berikutnya." required /><button type="submit">Terbitkan informasi</button></form></section>
+        <section className="admin-section"><h2>Kelola informasi</h2>{data?.incidents.length ? <div className="admin-incidents">{data.incidents.map((incident) => <article className="admin-incident" key={incident.id}><div className="admin-incident-head"><div><span className="eyebrow">{kindLabel(incident.kind)} · {stateLabel(incident.state)}</span><h3>{incident.title}</h3></div><Link href={`/incidents/${incident.id}`}>Lihat publik ↗</Link></div><p>{incident.updates[0]?.message || incident.message}</p><p className="form-hint">Pembaruan terakhir {formatJakarta(incident.updatedAt, { dateStyle: "medium", timeStyle: "short" })} WIB</p><form className="admin-form update-form" action={`/api/admin/incidents/${incident.id}`} method="post"><label htmlFor={`state-${incident.id}`}>Tahap berikutnya</label><select id={`state-${incident.id}`} name="state" defaultValue={incident.state}>{(incident.kind === "maintenance" ? ["scheduled", "in_progress", "resolved"] : ["investigating", "identified", "monitoring", "resolved"]).map((state) => <option key={state} value={state}>{stateLabel(state)}</option>)}</select><label htmlFor={`note-${incident.id}`}>Catatan pembaruan</label><textarea id={`note-${incident.id}`} name="message" rows={3} maxLength={2000} placeholder="Jelaskan perkembangan terbaru kepada publik." required /><button type="submit">Terbitkan pembaruan</button></form></article>)}</div> : <p className="muted-box">Belum ada informasi yang diterbitkan.</p>}</section>
+        <form action="/api/admin/logout" method="post"><button className="button-text" type="submit">Keluar dari pengelola</button></form>
+      </>}
+  </main></div>;
 }

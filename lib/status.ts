@@ -1,6 +1,6 @@
-import { desc, gte } from "drizzle-orm";
+import { desc, gte, inArray } from "drizzle-orm";
 import { getDb } from "./db";
-import { checks, incidents } from "./db/schema";
+import { checks, incidents, incidentUpdates } from "./db/schema";
 
 export type PublicStatus = "operational" | "degraded" | "unknown";
 
@@ -17,11 +17,19 @@ export async function getStatusData(durationMs = 30 * 24 * 60 * 60 * 1000, now =
       db.select().from(checks).where(gte(checks.checkedAt, since)).orderBy(desc(checks.checkedAt)).limit(16000),
       db.select().from(incidents).orderBy(desc(incidents.createdAt)).limit(12),
     ]);
+    const updates = recentIncidents.length
+      ? await db.select().from(incidentUpdates)
+        .where(inArray(incidentUpdates.incidentId, recentIncidents.map((incident) => incident.id)))
+        .orderBy(desc(incidentUpdates.createdAt), desc(incidentUpdates.id))
+      : [];
     const latest = latestRows[0] ?? null;
     const fresh = latest && now.getTime() - latest.checkedAt.getTime() < 20 * 60 * 1000;
     const state: PublicStatus = !fresh ? "unknown" : latest.ok ? "operational" : "degraded";
     const uptime = history.length ? Math.round((history.filter((check) => check.ok).length / history.length) * 10000) / 100 : null;
-    return { state, latest, history, incidents: recentIncidents, uptime, dataError: false };
+    return { state, latest, history, incidents: recentIncidents.map((incident) => ({
+      ...incident,
+      updates: updates.filter((update) => update.incidentId === incident.id),
+    })), uptime, dataError: false };
   } catch (error) {
     console.error("Failed to load status data", error);
     return { state: "unknown" as PublicStatus, latest: null, history: [], incidents: [], uptime: null, dataError: true };
