@@ -14,7 +14,7 @@ export async function getStatusData(durationMs = 30 * 24 * 60 * 60 * 1000, now =
     const since = new Date(now.getTime() - durationMs);
     const [latestRows, history, recentIncidents] = await Promise.all([
       db.select().from(checks).orderBy(desc(checks.checkedAt)).limit(1),
-      db.select().from(checks).where(gte(checks.checkedAt, since)).orderBy(desc(checks.checkedAt)).limit(9000),
+      db.select().from(checks).where(gte(checks.checkedAt, since)).orderBy(desc(checks.checkedAt)).limit(16000),
       db.select().from(incidents).orderBy(desc(incidents.createdAt)).limit(12),
     ]);
     const latest = latestRows[0] ?? null;

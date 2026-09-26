@@ -2,6 +2,389 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "crons": [
-    { "path": "/api/check", "schedule": "0 0 * * *" }
+    {
+      "path": "/api/check",
+      "schedule": "7 0 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 0 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 0 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 0 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 1 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 1 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 1 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 1 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 2 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 2 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 2 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 2 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 3 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 3 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 3 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 3 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 4 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 4 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 4 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 4 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 5 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 5 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 5 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 5 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 6 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 6 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 6 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 6 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 7 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 7 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 7 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 7 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 8 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 8 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 8 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 8 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 9 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 9 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 9 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 9 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 10 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 10 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 10 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 10 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 11 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 11 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 11 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 11 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 12 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 12 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 12 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 12 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 13 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 13 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 13 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 13 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 14 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 14 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 14 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 14 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 15 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 15 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 15 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 15 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 16 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 16 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 16 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 16 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 17 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 17 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 17 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 17 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 18 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 18 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 18 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 18 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 19 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 19 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 19 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 19 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 20 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 20 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 20 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 20 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 21 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 21 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 21 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 21 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 22 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 22 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 22 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 22 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "7 23 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "22 23 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "37 23 * * *"
+    },
+    {
+      "path": "/api/check",
+      "schedule": "52 23 * * *"
+    }
   ]
 }
