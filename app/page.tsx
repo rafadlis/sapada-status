@@ -20,12 +20,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
     : statusCopy[data.state];
   const start = now.getTime() - range.durationMs;
   const bucketMs = range.durationMs / range.buckets;
-  const buckets = Array.from({ length: range.buckets }, () => ({ count: 0, failed: false }));
+  const buckets = Array.from({ length: range.buckets }, () => ({ count: 0, failedCount: 0, latestFailure: null as (typeof data.history)[number] | null }));
   for (const check of data.history) {
     const index = Math.floor((check.checkedAt.getTime() - start) / bucketMs);
     if (index < 0 || index >= buckets.length) continue;
     buckets[index].count += 1;
-    buckets[index].failed ||= !check.ok;
+    if (!check.ok) {
+      buckets[index].failedCount += 1;
+      if (!buckets[index].latestFailure || check.checkedAt > buckets[index].latestFailure.checkedAt) buckets[index].latestFailure = check;
+    }
   }
 
   return (
@@ -49,7 +52,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
           </div>
           <div className={`status-panel status-${copy.tone}`} role="status">
             <div className="status-panel-top"><span>Kondisi saat ini</span><span className="live-label"><span className="live-dot" />Hasil pemantauan</span></div>
-            <div className="status-main"><span className="status-orb" aria-hidden="true" /><div><h2>{copy.label}</h2><p>{copy.detail}</p></div></div>
+            <div className="status-main"><span className="status-orb" aria-hidden="true" /><div><h2>{copy.label}</h2><p>{copy.detail}</p>{data.latest && !data.latest.ok && <p className="status-error">Detail pemeriksaan: {data.latest.error || (data.latest.statusCode ? `HTTP ${data.latest.statusCode}` : "Gagal mengakses layanan")}{data.latest.latencyMs !== null ? ` · ${data.latest.latencyMs.toLocaleString("id-ID")} ms` : ""}</p>}</div></div>
             <div className="status-panel-bottom"><span>Pemeriksaan terakhir</span><strong>{data.latest ? `${formatJakarta(data.latest.checkedAt, { dateStyle: "medium", timeStyle: "short" })} WIB` : "Belum tersedia"}</strong></div>
           </div>
         </section>
@@ -65,13 +68,22 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
             <div className="uptime-chart" aria-label={`Riwayat pemeriksaan ${range.label} terakhir`}>
               <div className="day-bars" style={{ gridTemplateColumns: `repeat(${range.buckets}, minmax(0, 1fr))` }}>{buckets.map((bucket, index) => {
                 const bucketStart = new Date(start + index * bucketMs);
-                const description = bucket.count === 0 ? "tidak ada data" : bucket.failed ? "ada gangguan" : "beroperasi";
-                return <span key={index} role="img" aria-label={`${formatJakarta(bucketStart, { dateStyle: "medium", timeStyle: "short" })} WIB: ${description}`} title={`${formatJakarta(bucketStart, { dateStyle: "medium", timeStyle: "short" })} WIB: ${description}`} className={`day-bar ${bucket.count === 0 ? "day-empty" : bucket.failed ? "day-failed" : "day-good"}`} />;
+                const bucketEnd = new Date(start + (index + 1) * bucketMs);
+                const period = `${formatJakarta(bucketStart, { dateStyle: "medium", timeStyle: "short" })}–${formatJakarta(bucketEnd, { timeStyle: "short" })} WIB`;
+                const failure = bucket.latestFailure;
+                const failureTime = failure ? `${formatJakarta(failure.checkedAt, { dateStyle: "medium", timeStyle: "short" })} WIB` : null;
+                const errorDetail = failure ? failure.error || (failure.statusCode ? `HTTP ${failure.statusCode}` : "Gagal mengakses layanan") : null;
+                const summary = bucket.count === 0 ? "Belum ada pemeriksaan" : bucket.failedCount ? `${bucket.failedCount} dari ${bucket.count} pemeriksaan gagal` : `${bucket.count} pemeriksaan berhasil`;
+                const label = `${period}: ${summary}${failureTime ? `. Gangguan terakhir ${failureTime}: ${errorDetail}` : ""}`;
+                return <details key={index} name="history-check" className={`history-bucket ${index >= range.buckets / 2 ? "bucket-right" : ""}`}>
+                  <summary className={`day-bar ${bucket.count === 0 ? "day-empty" : bucket.failedCount ? "day-failed" : "day-good"}`} aria-label={label} title={label} />
+                  <div className="bucket-popover"><strong>{period}</strong><span>{summary}</span>{failure && <><span>Gangguan terakhir: {failureTime}</span><span>{errorDetail}{failure.latencyMs !== null ? ` · ${failure.latencyMs.toLocaleString("id-ID")} ms` : ""}</span></>}</div>
+                </details>;
               })}</div>
               <div className="chart-labels"><span>{range.label} lalu</span><span>Sekarang</span></div>
             </div>
           </div>
-          <p className="overview-footnote">Persentase dihitung dari {data.history.length.toLocaleString("id-ID")} pemeriksaan yang tercatat. Bagian tanpa data tidak dihitung sebagai waktu aktif.</p>
+          <p className="overview-footnote">Arahkan kursor atau ketuk batang untuk melihat waktu dan detail pemeriksaan. Persentase dihitung dari {data.history.length.toLocaleString("id-ID")} pemeriksaan yang tercatat. Bagian tanpa data tidak dihitung sebagai waktu aktif.</p>
         </section>
 
         <section className="incidents-section" aria-labelledby="incidents-title">

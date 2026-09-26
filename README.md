@@ -2,7 +2,7 @@
 
 Public status page for `sapada.bapenda.garutkab.go.id`, hosted at `status.sapada.bapenda.garutkab.go.id`.
 
-The page shows the most recent HTTP check, selectable history ranges from 60 minutes to 30 days, and incident updates written by an administrator. The default history range is 60 minutes. A failed check marks the service as disrupted. If no check has arrived in 20 minutes, the page shows an unknown state rather than claiming that the service is healthy.
+The page shows the most recent HTTP check, selectable history ranges from 60 minutes to 30 days, and incident updates written by an administrator. The default history range is 60 minutes. Each history bar can be opened to see its check period, failure count, latest error time, and reason. A failed check marks the service as disrupted. If no check has arrived in 20 minutes, the page shows an unknown state rather than claiming that the service is healthy.
 
 ## Setup
 
@@ -15,11 +15,11 @@ The page shows the most recent HTTP check, selectable history ranges from 60 min
 
 ## Monitoring and incidents
 
-The GitHub Actions workflow calls `POST /api/check` every five minutes. Configure `MONITOR_TOKEN` as both a GitHub Actions repository secret and a Vercel environment variable, and set the `STATUS_URL` repository variable to the Vercel production URL. The endpoint measures a request to SAPADA, records the result in Neon, and returns the result as JSON. A workflow run can also be triggered manually.
+The GitHub Actions workflow calls `POST /api/check` every five minutes. Configure `MONITOR_TOKEN` as both a GitHub Actions repository secret and a Vercel environment variable, and set the `STATUS_URL` repository variable to the Vercel production URL. Vercel Cron also calls `GET /api/check` daily as a separate check; set `CRON_SECRET` in Vercel production environment variables. Both endpoints measure a request to SAPADA, record the result in Neon, and return the result as JSON. A workflow run can also be triggered manually.
 
 Open `/admin` and sign in with `ADMIN_PASSWORD` to publish an incident or mark one resolved. The page requires `SESSION_SECRET` to sign its session cookie. Only the public incident text and timestamps appear on the status page.
 
-GitHub scheduled workflows can run late or be skipped under load. GitHub also disables scheduled workflows in public repositories after 60 days without repository activity. Check the workflow periodically or move scheduling to a dedicated uptime service for long-term operation. The public page marks monitoring as unknown when results stop arriving. The status site and its database must be reachable for checks to be saved.
+The current Vercel Hobby plan permits Cron only once per day, so GitHub Actions remains the five-minute scheduler. GitHub scheduled workflows can run late or be skipped under load. GitHub also disables scheduled workflows in public repositories after 60 days without repository activity. Five-minute Vercel Cron requires a Pro plan. The public page marks monitoring as unknown when results stop arriving. The status site and its database must be reachable for checks to be saved.
 
 ## Domain
 

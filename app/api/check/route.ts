@@ -3,12 +3,25 @@ import { checks } from "@/lib/db/schema";
 
 export const runtime = "nodejs";
 
-export async function POST(request: Request) {
-  const token = process.env.MONITOR_TOKEN;
-  if (!token || request.headers.get("authorization") !== `Bearer ${token}`) {
+function authorized(request: Request, secret: string | undefined) {
+  return Boolean(secret && request.headers.get("authorization") === `Bearer ${secret}`);
+}
+
+export async function GET(request: Request) {
+  if (!authorized(request, process.env.CRON_SECRET)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+  return runCheck();
+}
 
+export async function POST(request: Request) {
+  if (!authorized(request, process.env.MONITOR_TOKEN)) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return runCheck();
+}
+
+async function runCheck() {
   const started = performance.now();
   let ok = false;
   let statusCode: number | null = null;
