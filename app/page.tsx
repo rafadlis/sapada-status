@@ -72,7 +72,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
                 const bucketEnd = new Date(start + (index + 1) * bucketMs);
                 const period = `${formatJakarta(bucketStart, { dateStyle: "medium", timeStyle: "short" })}–${formatJakarta(bucketEnd, { timeStyle: "short" })} WIB`;
                 const failure = bucket.latestFailure;
-                const failureTime = failure ? `${formatJakarta(failure.checkedAt, { dateStyle: "medium", hour: "2-digit", minute: "2-digit", second: "2-digit" })} WIB` : null;
+                const failureTime = failure ? `${formatJakarta(failure.checkedAt, { dateStyle: "medium", timeStyle: "medium" })} WIB` : null;
                 const errorDetail = failure ? failure.error || (failure.statusCode ? `HTTP ${failure.statusCode}` : "Gagal mengakses layanan") : null;
                 const summary = bucket.count === 0 ? "Belum ada pemeriksaan" : bucket.failedCount ? `${bucket.failedCount} dari ${bucket.count} pemeriksaan gagal` : `${bucket.count} pemeriksaan berhasil`;
                 const label = `${period}: ${summary}${failureTime ? `. Gangguan terakhir ${failureTime}: ${errorDetail}` : ""}`;

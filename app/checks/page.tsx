@@ -71,7 +71,7 @@ export default async function ChecksPage({ searchParams }: { searchParams: Promi
             : rows.length === 0 ? <p className="check-message">Tidak ada pemeriksaan yang tercatat pada rentang waktu ini.</p>
               : <div className="check-list">{rows.map((check) => (
                 <article className="check-row" key={check.id}>
-                  <div><time dateTime={check.checkedAt.toISOString()}>{formatJakarta(check.checkedAt, { dateStyle: "medium", hour: "2-digit", minute: "2-digit", second: "2-digit" })} WIB</time><span className={`check-result ${check.ok ? "check-ok" : "check-failed"}`}>{check.ok ? "Berhasil" : "Gagal"}</span></div>
+                  <div><time dateTime={check.checkedAt.toISOString()}>{formatJakarta(check.checkedAt, { dateStyle: "medium", timeStyle: "medium" })} WIB</time><span className={`check-result ${check.ok ? "check-ok" : "check-failed"}`}>{check.ok ? "Berhasil" : "Gagal"}</span></div>
                   <p>{check.ok ? `HTTP ${check.statusCode ?? "berhasil"}` : check.error || (check.statusCode ? `HTTP ${check.statusCode}` : "Gagal mengakses layanan")}{check.latencyMs !== null ? ` · ${check.latencyMs.toLocaleString("id-ID")} ms` : ""}</p>
                 </article>
               ))}</div>}
