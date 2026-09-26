@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import Link from "next/link";
+import { getHistoryRange, historyRanges } from "@/lib/history-range";
 import { formatJakarta, getStatusData } from "@/lib/status";
 
 const statusCopy = {
@@ -8,31 +9,24 @@ const statusCopy = {
   unknown: { label: "Status belum dapat dipastikan", detail: "Belum ada hasil pemeriksaan terbaru. Silakan coba lagi nanti.", tone: "unknown" },
 } as const;
 
-function dayKey(date: Date) {
-  return formatJakarta(date, { year: "numeric", month: "2-digit", day: "2-digit" });
-}
-
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ range?: string | string[] }> }) {
   await connection();
-  const data = await getStatusData();
+  const range = getHistoryRange((await searchParams).range);
+  const now = new Date();
+  const data = await getStatusData(range.durationMs, now);
   const openIncidents = data.incidents.filter((incident) => incident.state !== "resolved");
   const copy = openIncidents.length
     ? { label: "Gangguan sedang ditangani", detail: "Baca pembaruan pengelola di bawah untuk informasi terbaru.", tone: "bad" }
     : statusCopy[data.state];
-  const now = new Date();
-  const checksByDay = new Map<string, { count: number; failed: boolean }>();
+  const start = now.getTime() - range.durationMs;
+  const bucketMs = range.durationMs / range.buckets;
+  const buckets = Array.from({ length: range.buckets }, () => ({ count: 0, failed: false }));
   for (const check of data.history) {
-    const key = dayKey(check.checkedAt);
-    const previous = checksByDay.get(key);
-    checksByDay.set(key, { count: (previous?.count ?? 0) + 1, failed: Boolean(previous?.failed || !check.ok) });
+    const index = Math.floor((check.checkedAt.getTime() - start) / bucketMs);
+    if (index < 0 || index >= buckets.length) continue;
+    buckets[index].count += 1;
+    buckets[index].failed ||= !check.ok;
   }
-  const days = Array.from({ length: 30 }, (_, index) => {
-    const day = new Date(now);
-    day.setUTCDate(day.getUTCDate() - 29 + index);
-    const key = dayKey(day);
-    const checks = checksByDay.get(key);
-    return { key, day, count: checks?.count ?? 0, failed: checks?.failed ?? false };
-  });
 
   return (
     <div className="site-shell">
@@ -61,12 +55,20 @@ export default async function Home() {
         </section>
 
         <section className="overview" aria-labelledby="overview-title">
-          <div className="section-heading"><div><p className="kicker">Pemantauan otomatis</p><h2 id="overview-title">Ketersediaan layanan</h2></div><span className="section-note">30 hari terakhir</span></div>
+          <div className="section-heading overview-heading"><div><p className="kicker">Pemantauan otomatis</p><h2 id="overview-title">Ketersediaan layanan</h2></div>
+            <nav className="range-picker" aria-label="Rentang riwayat pemeriksaan">
+              {historyRanges.map((option) => <Link key={option.key} href={option.key === "60m" ? "/" : `/?range=${option.key}`} prefetch={false} aria-current={range.key === option.key ? "page" : undefined} className="range-option">{option.label}</Link>)}
+            </nav>
+          </div>
           <div className="overview-grid">
             <div className="uptime-number"><strong>{data.uptime === null ? "—" : `${data.uptime.toFixed(2)}%`}</strong><span>Pemeriksaan berhasil</span></div>
-            <div className="uptime-chart" aria-label="Riwayat pemeriksaan 30 hari">
-              <div className="day-bars">{days.map((day) => <span key={day.key} title={`${formatJakarta(day.day, { dateStyle: "medium" })}: ${day.count === 0 ? "tidak ada data" : day.failed ? "ada gangguan" : "beroperasi"}`} className={`day-bar ${day.count === 0 ? "day-empty" : day.failed ? "day-failed" : "day-good"}`} />)}</div>
-              <div className="chart-labels"><span>30 hari lalu</span><span>Hari ini</span></div>
+            <div className="uptime-chart" aria-label={`Riwayat pemeriksaan ${range.label} terakhir`}>
+              <div className="day-bars" style={{ gridTemplateColumns: `repeat(${range.buckets}, minmax(0, 1fr))` }}>{buckets.map((bucket, index) => {
+                const bucketStart = new Date(start + index * bucketMs);
+                const description = bucket.count === 0 ? "tidak ada data" : bucket.failed ? "ada gangguan" : "beroperasi";
+                return <span key={index} role="img" aria-label={`${formatJakarta(bucketStart, { dateStyle: "medium", timeStyle: "short" })} WIB: ${description}`} title={`${formatJakarta(bucketStart, { dateStyle: "medium", timeStyle: "short" })} WIB: ${description}`} className={`day-bar ${bucket.count === 0 ? "day-empty" : bucket.failed ? "day-failed" : "day-good"}`} />;
+              })}</div>
+              <div className="chart-labels"><span>{range.label} lalu</span><span>Sekarang</span></div>
             </div>
           </div>
           <p className="overview-footnote">Persentase dihitung dari {data.history.length.toLocaleString("id-ID")} pemeriksaan yang tercatat. Bagian tanpa data tidak dihitung sebagai waktu aktif.</p>

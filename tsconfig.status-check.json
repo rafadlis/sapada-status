@@ -13,6 +13,7 @@
     "app/api/admin/incidents/[id]/route.ts",
     "lib/auth.ts",
     "lib/status.ts",
+    "lib/history-range.ts",
     "lib/db/index.ts",
     "lib/db/schema.ts",
     "drizzle.config.ts"

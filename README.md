@@ -2,7 +2,7 @@
 
 Public status page for `sapada.bapenda.garutkab.go.id`, hosted at `status.sapada.bapenda.garutkab.go.id`.
 
-The page shows the most recent HTTP check, a 30 day history, and incident updates written by an administrator. A failed check marks the service as disrupted. If no check has arrived in 20 minutes, the page shows an unknown state rather than claiming that the service is healthy.
+The page shows the most recent HTTP check, selectable history ranges from 60 minutes to 30 days, and incident updates written by an administrator. The default history range is 60 minutes. A failed check marks the service as disrupted. If no check has arrived in 20 minutes, the page shows an unknown state rather than claiming that the service is healthy.
 
 ## Setup
 
