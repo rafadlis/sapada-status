@@ -7,9 +7,13 @@ export async function POST(request: Request) {
   if (!validPassword(password)) {
     return Response.redirect(new URL("/admin?error=login", request.url), 303);
   }
-  const response = Response.redirect(new URL("/admin", request.url), 303);
-  response.headers.append("set-cookie", serializeCookie(sessionCookie(createSession())));
-  return response;
+  return new Response(null, {
+    status: 303,
+    headers: {
+      Location: new URL("/admin", request.url).toString(),
+      "Set-Cookie": serializeCookie(sessionCookie(createSession())),
+    },
+  });
 }
 
 function serializeCookie(cookie: ReturnType<typeof sessionCookie>) {
