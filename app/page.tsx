@@ -32,7 +32,7 @@ async function LiveStatus({ searchParams }: HomeProps) {
   return <main className="site-width reference-main">
     <section className={`reference-overall overall-${state}`} aria-label="Kondisi layanan saat ini"><div className="reference-overall-head"><span className="reference-overall-icon" aria-hidden="true">{state === "operational" ? "✓" : state === "degraded" ? "!" : "?"}</span><h1>{copy.title}</h1></div><div className="reference-overall-body"><p>{copy.detail}</p>{active[0] && <Link href={`/incidents/${active[0].id}`}>{active[0].title}</Link>}</div></section>
 
-    <HistoryChart history={data.history} selectedRange={range.key} now={now} latest={data.latest} monitorState={data.state} />
+    <HistoryChart history={data.history} selectedRange={range.key} now={now} monitorState={data.state} />
     <div className="reference-history-action"><Link href="/history">Lihat riwayat pembaruan</Link></div>
 
     {active.length > 0 && <section className="reference-updates" aria-labelledby="updates-title"><div className="reference-updates-heading"><h2 id="updates-title">Pembaruan terkini</h2><Link href="/history">Semua riwayat</Link></div><div>{active.map((incident) => <IncidentRow incident={incident} key={incident.id} />)}</div></section>}

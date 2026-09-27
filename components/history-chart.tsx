@@ -7,11 +7,10 @@ import { formatJakarta, type PublicStatus } from "@/lib/status";
 
 type Check = typeof checks.$inferSelect;
 
-export function HistoryChart({ history, selectedRange, now, latest, monitorState }: {
+export function HistoryChart({ history, selectedRange, now, monitorState }: {
   history: Check[];
   selectedRange: string | string[] | undefined;
   now: Date;
-  latest: Check | null;
   monitorState: PublicStatus;
 }) {
   const range = getHistoryRange(selectedRange);
@@ -44,7 +43,7 @@ export function HistoryChart({ history, selectedRange, now, latest, monitorState
         </details>;
       })}</div>
       <div className="reference-bar-axis"><span>{range.label} lalu</span><span>1 batang = {range.bucketLabel}</span><span>Sekarang</span></div>
-      <div className="reference-service-foot"><p><span className="reference-legend"><i className="reference-bar-good" />Berhasil<i className="reference-bar-failed" />Gagal<i className="reference-bar-empty" />Belum diperiksa</span> · {history.length.toLocaleString("id-ID")} pemeriksaan tercatat. Persentase menghitung pemeriksaan, bukan durasi gangguan.</p><p>{latest ? <>Terakhir diperiksa <time dateTime={latest.checkedAt.toISOString()}>{formatJakarta(latest.checkedAt, { dateStyle: "medium", timeStyle: "medium" })} WIB</time>{!latest.ok && <> · {formatCheckResult(latest)}</>}</> : "Belum ada pemeriksaan terbaru."}</p></div>
+      <div className="reference-service-foot"><div className="reference-legend" aria-label="Legenda pemeriksaan"><span><i className="reference-bar-good" aria-hidden="true" />Berhasil</span><span><i className="reference-bar-failed" aria-hidden="true" />Gagal</span><span><i className="reference-bar-empty" aria-hidden="true" />Belum diperiksa</span></div></div>
     </div>
   </section>;
 }

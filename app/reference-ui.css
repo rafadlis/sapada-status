@@ -62,12 +62,9 @@
 .reference-bar-right .reference-bar-popover { left: auto; right: 0; }
 .reference-bar-axis { display: flex; justify-content: space-between; gap: 10px; margin: 8px 0 0; color: #9aa4af; font-size: 10px; }
 .reference-service-foot { margin: 17px -16px 0; padding: 11px 16px 13px; border-top: 1px solid var(--reference-line); color: #7a8392; font-size: 11px; line-height: 1.55; }
-.reference-service-foot p { margin: 0; }
-.reference-service-foot p + p { margin-top: 5px; }
-.reference-service-foot time { color: #515b6d; font-weight: 600; }
-.reference-legend { display: inline-flex; align-items: center; gap: 5px; }
-.reference-legend i { width: 7px; height: 7px; display: inline-block; border-radius: 1px; margin-left: 4px; }
-.reference-legend i:first-child { margin-left: 0; }
+.reference-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; }
+.reference-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.reference-legend i { width: 7px; height: 7px; display: inline-block; border-radius: 1px; }
 .reference-history-action { display: flex; justify-content: center; margin: 23px 0 0; }
 .reference-history-action a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 13px; border: 1px solid #d7d9dd; border-radius: 5px; color: #1c1f24; background: #fff; text-decoration: none; font-size: 12px; font-weight: 650; }
 .reference-history-action a:hover { background: #f7f8fa; }
@@ -131,7 +128,6 @@
   .reference-uptime { margin-left: 24px; }
   .reference-service-head > div { flex-wrap: wrap; }
   .reference-bar-axis span:nth-child(2) { display: none; }
-  .reference-legend { display: flex; flex-wrap: wrap; }
   .reference-incident-row { grid-template-columns: 41px minmax(0, 1fr); gap: 10px; padding-right: 0; }
   .reference-incident-row > time { grid-column: 2; text-align: left; padding-left: 16px; margin-top: -17px; }
   .reference-history-toolbar { gap: 12px; }
