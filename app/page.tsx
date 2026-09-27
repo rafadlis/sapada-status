@@ -27,7 +27,7 @@ async function SelectedRangeStatus({ searchParams }: HomeProps) {
 async function LiveStatus({ range }: { range: ReturnType<typeof getHistoryRange> }) {
   await connection();
   const now = new Date();
-  const data = await getStatusData(range.durationMs, now);
+  const data = await getStatusData(range, now);
   const active = data.incidents.filter((incident) => incident.state !== "resolved");
   const serviceStatuses = data.services.map((service) => ({
     ...service,

@@ -1,11 +1,8 @@
 import Link from "next/link";
 import { HistoryRangeMenu } from "@/components/history-range-menu";
-import type { checks } from "@/lib/db/schema";
 import { formatCheckResult } from "@/lib/check-result";
 import { getHistoryRange } from "@/lib/history-range";
 import { formatJakarta, type ServiceStatus } from "@/lib/status";
-
-type Check = typeof checks.$inferSelect;
 
 export function HistoryChart({ services, selectedRange, now }: {
   services: ServiceStatus[];
@@ -27,16 +24,7 @@ function ServiceHistoryRow({ service, range, now }: {
 }) {
   const start = now.getTime() - range.durationMs;
   const bucketMs = range.durationMs / range.buckets;
-  const buckets = Array.from({ length: range.buckets }, () => ({ count: 0, failedCount: 0, latestFailure: null as Check | null }));
-  for (const check of service.history) {
-    const index = Math.floor((check.checkedAt.getTime() - start) / bucketMs);
-    if (index < 0 || index >= buckets.length) continue;
-    buckets[index].count++;
-    if (!check.ok) {
-      buckets[index].failedCount++;
-      if (!buckets[index].latestFailure || check.checkedAt > buckets[index].latestFailure.checkedAt) buckets[index].latestFailure = check;
-    }
-  }
+  const buckets = service.history;
   const stateLabel = service.state === "operational" ? "Beroperasi" : service.state === "degraded" ? "Terganggu" : "Belum diketahui";
 
   return <div className="reference-service" aria-label={`${service.service.name}: ${stateLabel}`}>

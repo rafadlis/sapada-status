@@ -20,7 +20,7 @@ async function AdminContent({ searchParams }: AdminProps) {
   await connection();
   const params = await searchParams;
   const authorized = await isAdmin();
-  const data = authorized ? await getStatusData(0) : null;
+  const data = authorized ? await getStatusData(null) : null;
   return <main className="site-width subpage-main admin-main">
     <span className="eyebrow">PENGELOLA BAPENDA</span><h1>{authorized ? "Kelola pembaruan" : "Masuk sebagai pengelola"}</h1>
     {params.error === "login" && !authorized && <p className="form-feedback form-error" role="alert">Kata sandi tidak sesuai. Coba lagi.</p>}
