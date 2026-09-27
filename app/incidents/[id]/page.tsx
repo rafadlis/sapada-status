@@ -12,7 +12,7 @@ import { kindLabel, stateLabel } from "@/lib/incident";
 import { formatJakarta } from "@/lib/status";
 import { getService } from "@/lib/services";
 
-export const metadata: Metadata = { title: "Detail gangguan | Status Bapenda Garut" };
+export const metadata: Metadata = { title: "Detail pembaruan | Status Bapenda Garut" };
 
 type IncidentProps = { params: Promise<{ id: string }> };
 
