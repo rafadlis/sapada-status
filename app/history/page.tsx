@@ -8,7 +8,7 @@ import { SiteFooter, SiteHeader } from "@/components/site-header";
 import { getIncidentHistory } from "@/lib/incident-history";
 import { formatJakarta } from "@/lib/status";
 
-export const metadata: Metadata = { title: "Riwayat pembaruan | Status SAPADA Garut" };
+export const metadata: Metadata = { title: "Riwayat pembaruan | Status Bapenda Garut" };
 const pageSize = 30;
 
 type HistoryProps = { searchParams: Promise<{ page?: string; period?: string }> };
@@ -48,7 +48,7 @@ async function HistoryContent({ searchParams }: HistoryProps) {
   });
 
   return <main className="site-width reference-history-page">
-    <div className="reference-breadcrumb"><Link href="/">SAPADA</Link><span>/</span><span>Riwayat</span></div>
+    <div className="reference-breadcrumb"><Link href="/">Bapenda Garut</Link><span>/</span><span>Riwayat</span></div>
     <div className="reference-history-toolbar"><h1>Riwayat</h1><nav aria-label="Periode riwayat">{period < 30 ? <Link href={`/history?period=${period + 1}`} aria-label="Empat bulan sebelumnya">‹</Link> : <span className="period-disabled" aria-hidden="true">‹</span>}<span>{periodLabel}</span>{period > 0 ? <Link href={period === 1 ? "/history" : `/history?period=${period - 1}`} aria-label="Empat bulan berikutnya">›</Link> : <span className="period-disabled" aria-hidden="true">›</span>}</nav></div>
     {unavailable ? <p className="reference-history-empty">Riwayat belum dapat dimuat. Coba lagi nanti.</p> : visible.length ? <div className="reference-history-list">{entries.map(({ incident, monthLabel, showMonth }) => <Fragment key={incident.id}>{showMonth && <h2 className="reference-month">{monthLabel}</h2>}<IncidentRow incident={{ ...incident, updates: updates.filter((update) => update.incidentId === incident.id) }} /></Fragment>)}</div> : <p className="reference-history-empty">Tidak ada pembaruan pada periode ini.</p>}
     {(page > 1 || hasNext) && <nav className="reference-history-pager" aria-label="Halaman riwayat">{page > 1 && <Link href={page === 2 ? `/history?period=${period}` : pageHref(page - 1)}>Lebih baru</Link>}<span>Halaman {page}</span>{hasNext && <Link href={pageHref(page + 1)}>Lebih lama</Link>}</nav>}

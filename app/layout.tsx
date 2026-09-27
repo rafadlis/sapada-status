@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Status SAPADA Garut",
-  description: "Informasi ketersediaan layanan SAPADA dan pembaruan gangguan dari Bapenda Kabupaten Garut.",
+  title: "Status Layanan Bapenda Garut",
+  description: "Informasi ketersediaan SAPADA, Struk Berhadiah, Simpul PAD, dan situs Bapenda Kabupaten Garut.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

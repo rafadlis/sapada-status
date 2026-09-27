@@ -1,4 +1,4 @@
-name: Check SAPADA
+name: Check Bapenda services
 
 on:
   schedule:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - name: Run health check
+      - name: Check all services
         env:
           MONITOR_TOKEN: ${{ secrets.MONITOR_TOKEN }}
           STATUS_URL: ${{ vars.STATUS_URL }}

@@ -4,6 +4,7 @@ import { isAdmin, sameOrigin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { initialState, isIncidentKind } from "@/lib/incident";
 import { incidentHistoryTag } from "@/lib/incident-history";
+import { getService } from "@/lib/services";
 
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return new Response("Forbidden", { status: 403 });
@@ -12,14 +13,15 @@ export async function POST(request: Request) {
   const title = String(form.get("title") ?? "").trim();
   const message = String(form.get("message") ?? "").trim();
   const kind = String(form.get("kind") ?? "incident");
-  if (!title || !message || title.length > 120 || message.length > 2000 || !isIncidentKind(kind)) {
+  const serviceKey = String(form.get("serviceKey") ?? "");
+  if (!title || !message || title.length > 120 || message.length > 2000 || !isIncidentKind(kind) || !getService(serviceKey)) {
     return Response.redirect(new URL("/admin?error=validation", request.url), 303);
   }
   const db = getDb();
   const state = initialState(kind);
   await db.execute(sql`WITH created AS (
-    INSERT INTO incidents (title, message, kind, state)
-    VALUES (${title}, ${message}, ${kind}, ${state})
+    INSERT INTO incidents (title, message, kind, state, service_key)
+    VALUES (${title}, ${message}, ${kind}, ${state}, ${serviceKey})
     RETURNING id, created_at
   ) INSERT INTO incident_updates (incident_id, state, message, created_at)
     SELECT id, ${state}, ${message}, created_at FROM created`);

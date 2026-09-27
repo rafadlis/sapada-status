@@ -3,11 +3,11 @@ import { StatusMark } from "@/components/status-mark";
 
 export function SiteHeader() {
   return <header className="site-header"><div className="site-width site-header-inner">
-    <Link className="brand" href="/" aria-label="Beranda Status SAPADA"><StatusMark className="brand-symbol" /><span className="brand-copy"><strong>SAPADA</strong><small>Status layanan</small></span></Link>
+    <Link className="brand" href="/" aria-label="Beranda Status Bapenda Garut"><StatusMark className="brand-symbol" /><span className="brand-copy"><strong>Bapenda Garut</strong><small>Status layanan</small></span></Link>
     <Link className="header-subscribe" href="/rss.xml">RSS pembaruan</Link>
   </div></header>;
 }
 
 export function SiteFooter() {
-  return <footer className="site-footer"><div className="site-width site-footer-inner"><span>SAPADA · Bapenda Kabupaten Garut</span><div><span>Waktu WIB</span><Link href="https://sapada.bapenda.garutkab.go.id/" target="_blank" rel="noreferrer">Buka SAPADA</Link><Link href="/admin">Pengelola</Link></div></div></footer>;
+  return <footer className="site-footer"><div className="site-width site-footer-inner"><span>Bapenda Kabupaten Garut</span><div><span>Waktu WIB</span><Link href="https://bapenda.garutkab.go.id/" target="_blank" rel="noreferrer">Buka Bapenda</Link><Link href="/admin">Pengelola</Link></div></div></footer>;
 }
