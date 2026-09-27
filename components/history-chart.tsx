@@ -29,7 +29,7 @@ export function HistoryChart({ history, selectedRange, now, monitorState }: {
   const uptime = history.length ? 100 * history.filter((check) => check.ok).length / history.length : null;
 
   return <section className="reference-system-card" aria-labelledby="system-status-title">
-    <div className="reference-system-head"><h2 id="system-status-title">Status sistem</h2><HistoryRangeMenu selectedRange={range.key} /></div>
+    <div className="reference-system-head"><h2 id="system-status-title">Status sistem</h2><HistoryRangeMenu key={range.key} selectedRange={range.key} /></div>
     <div className="reference-service"><div className="reference-service-head"><div><span className={`reference-service-icon status-${monitorState}`} aria-hidden="true">{monitorState === "operational" ? "✓" : monitorState === "degraded" ? "!" : "?"}</span><strong>SAPADA</strong><span className="reference-service-domain">sapada.bapenda.garutkab.go.id</span></div><span className="reference-uptime">{uptime === null ? "Belum ada data" : `${uptime.toFixed(2)}% pemeriksaan berhasil`}</span></div>
       <div className="reference-bars" style={{ gridTemplateColumns: `repeat(${range.buckets}, minmax(0, 1fr))` }}>{buckets.map((bucket, index) => {
         const bucketStart = new Date(start + index * bucketMs);

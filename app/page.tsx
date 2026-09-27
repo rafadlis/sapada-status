@@ -13,13 +13,19 @@ type HomeProps = { searchParams: Promise<{ range?: string | string[] }> };
 
 export default function Home({ searchParams }: HomeProps) {
   return <div className="status-site reference-site"><AutoRefresh /><SiteHeader />
-    <Suspense fallback={<PageLoading page="home" />}><LiveStatus searchParams={searchParams} /></Suspense>
+    <Suspense fallback={<PageLoading page="home" />}><SelectedRangeStatus searchParams={searchParams} /></Suspense>
     <SiteFooter /></div>;
 }
 
-async function LiveStatus({ searchParams }: HomeProps) {
-  await connection();
+async function SelectedRangeStatus({ searchParams }: HomeProps) {
   const range = getHistoryRange((await searchParams).range);
+  return <Suspense key={range.key} fallback={<PageLoading page="home" range={range} />}>
+    <LiveStatus range={range} />
+  </Suspense>;
+}
+
+async function LiveStatus({ range }: { range: ReturnType<typeof getHistoryRange> }) {
+  await connection();
   const now = new Date();
   const data = await getStatusData(range.durationMs, now);
   const active = data.incidents.filter((incident) => incident.state !== "resolved");

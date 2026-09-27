@@ -33,8 +33,8 @@
 .reference-overall.overall-unknown { border-color: #afbbc7; background: #eef2f6; color: #253547; }
 .reference-overall.overall-unknown .reference-overall-icon { background: #849bad; }
 
-.reference-system-card { margin-top: 24px; border: 1px solid #e0e1e5; border-radius: 8px; box-shadow: 0 1px 4px #20202b0a; }
-.reference-system-head { position: relative; min-height: 54px; display: flex; align-items: center; gap: 20px; padding: 12px 16px; border-bottom: 1px solid var(--reference-line); }
+.reference-system-card { position: relative; margin-top: 24px; border: 1px solid #e0e1e5; border-radius: 8px; box-shadow: 0 1px 4px #20202b0a; }
+.reference-system-head { min-height: 54px; display: flex; align-items: center; gap: 20px; padding: 12px 16px; border-bottom: 1px solid var(--reference-line); }
 .reference-system-head h2 { margin: 0; font-size: 15px; font-weight: 700; line-height: 1.3; white-space: nowrap; }
 .reference-service { padding: 17px 16px 0; }
 .reference-service-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 14px; }
@@ -62,6 +62,12 @@
 .reference-bar-right .reference-bar-popover { left: auto; right: 0; }
 .reference-bar-axis { display: flex; justify-content: space-between; gap: 10px; margin: 8px 0 0; color: #9aa4af; font-size: 10px; }
 .reference-service-foot { margin: 17px -16px 0; padding: 11px 16px 13px; border-top: 1px solid var(--reference-line); color: #7a8392; font-size: 11px; line-height: 1.55; }
+.chart-loading-overlay { position: absolute; z-index: 5; inset: 0; border-radius: 8px; background: #fff; box-shadow: 0 1px 4px #20202b0a; overflow: hidden; }
+.chart-loading-card { overflow: hidden; }
+.chart-loading-range { color: #8a91a0; font-size: 12px; }
+.chart-loading-icon.loading-line { width: 16px; height: 16px; margin: 0; border-radius: 50%; flex: none; }
+.chart-loading-uptime.loading-line { width: 116px; height: 12px; margin: 0; }
+.chart-loading-bar { min-width: 0; background: #e7eaee; border-radius: 1px; }
 .reference-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; }
 .reference-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .reference-legend i { width: 7px; height: 7px; display: inline-block; border-radius: 1px; }
