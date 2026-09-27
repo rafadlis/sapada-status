@@ -12,8 +12,8 @@ export function HistoryChart({ services, selectedRange, now }: {
   const range = getHistoryRange(selectedRange);
   return <section className="reference-system-card" aria-labelledby="system-status-title">
     <div className="reference-system-head"><h2 id="system-status-title">Status sistem</h2><HistoryRangeMenu key={range.key} selectedRange={range.key} /></div>
+    <div className="reference-service-legend"><div className="reference-legend" aria-label="Legenda pemeriksaan"><span><i className="reference-bar-good" aria-hidden="true" />Berhasil</span><span><i className="reference-bar-failed" aria-hidden="true" />Gagal</span><span><i className="reference-bar-empty" aria-hidden="true" />Belum diperiksa</span></div></div>
     {services.map((service) => <ServiceHistoryRow key={service.service.key} service={service} range={range} now={now} />)}
-    <div className="reference-service-foot"><div className="reference-legend" aria-label="Legenda pemeriksaan"><span><i className="reference-bar-good" aria-hidden="true" />Berhasil</span><span><i className="reference-bar-failed" aria-hidden="true" />Gagal</span><span><i className="reference-bar-empty" aria-hidden="true" />Belum diperiksa</span></div></div>
   </section>;
 }
 

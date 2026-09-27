@@ -64,7 +64,7 @@
 .reference-bar-popover a { color: #174b86; font-weight: 700; text-decoration: none; }
 .reference-bar-right .reference-bar-popover { left: auto; right: 0; }
 .reference-bar-axis { display: flex; justify-content: space-between; gap: 10px; margin: 8px 0 0; color: #9aa4af; font-size: 10px; }
-.reference-service-foot { padding: 11px 16px 13px; border-top: 1px solid var(--reference-line); color: #7a8392; font-size: 11px; line-height: 1.55; }
+.reference-service-legend { padding: 9px 16px; border-bottom: 1px solid var(--reference-line); color: #7a8392; font-size: 11px; line-height: 1.55; }
 .chart-loading-overlay { position: absolute; z-index: 5; inset: 0; border-radius: 8px; background: #fff; box-shadow: 0 1px 4px #20202b0a; overflow: hidden; }
 .chart-loading-card { overflow: hidden; }
 .chart-loading-range { color: #8a91a0; font-size: 12px; }
