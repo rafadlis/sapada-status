@@ -42,7 +42,7 @@ function ServiceHistoryRow({ service, range, now }: {
       const label = `${service.service.name}, ${period}: ${summary}${failure ? `. ${formatCheckResult(failure)}` : ""}`;
       const barClass = `reference-bar ${bucket.count === 0 ? "reference-bar-empty" : bucket.failedCount ? "reference-bar-failed" : "reference-bar-good"}`;
       const trigger = bucket.count > 0
-        ? <Link href={`/checks?service=${service.service.key}&from=${bucketStart.getTime()}&to=${bucketEnd.getTime()}&range=${range.key}`} className={barClass} aria-label={`${label}. Lihat semua pemeriksaan.`} />
+        ? <Link href={`/checks?service=${service.service.key}&from=${bucketStart.getTime()}&to=${Math.min(bucketEnd.getTime(), now.getTime())}&range=${range.key}`} className={barClass} aria-label={`${label}. Lihat semua pemeriksaan.`} />
         : <button type="button" className={barClass} aria-label={label} />;
       return <Tooltip key={index}>
         <TooltipTrigger render={trigger} />
