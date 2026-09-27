@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import { checks, incidents, incidentUpdates } from "./db/schema";
-import { defaultHistoryRange, getHistoryRange } from "./history-range";
+import { defaultHistoryRange, getHistoryRange, getHistoryWindow } from "./history-range";
 import { services } from "./services";
 
 export type PublicStatus = "operational" | "degraded" | "unknown";
@@ -42,8 +42,9 @@ export async function getStatusData(range: HistoryRange | null = defaultHistoryR
 
   try {
     const db = getDb();
-    const since = range ? new Date(now.getTime() - range.durationMs) : now;
-    const bucketMs = range ? range.durationMs / range.buckets : 0;
+    const window = range ? getHistoryWindow(range, now) : null;
+    const since = window?.start ?? now;
+    const bucketMs = window?.bucketMs ?? 0;
     const bucketIndex = sql<number>`floor((extract(epoch from ${checks.checkedAt}) * 1000 - ${since.getTime()}) / ${bucketMs || 1})::integer`;
     const [latestRows, aggregateRows, recentIncidents] = await Promise.all([
       Promise.all(services.map((service) => db.select().from(checks)

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { HistoryRangeMenu } from "@/components/history-range-menu";
 import { formatCheckResult } from "@/lib/check-result";
-import { getHistoryRange } from "@/lib/history-range";
+import { getHistoryRange, getHistoryWindow } from "@/lib/history-range";
 import { formatJakarta, type ServiceStatus } from "@/lib/status";
 
 export function HistoryChart({ services, selectedRange, now }: {
@@ -22,17 +22,18 @@ function ServiceHistoryRow({ service, range, now }: {
   range: ReturnType<typeof getHistoryRange>;
   now: Date;
 }) {
-  const start = now.getTime() - range.durationMs;
-  const bucketMs = range.durationMs / range.buckets;
+  const { start, bucketMs } = getHistoryWindow(range, now);
   const buckets = service.history;
   const stateLabel = service.state === "operational" ? "Beroperasi" : service.state === "degraded" ? "Terganggu" : "Belum diketahui";
 
   return <div className="reference-service" aria-label={`${service.service.name}: ${stateLabel}`}>
-    <div className="reference-service-head"><div><span className={`reference-service-icon status-${service.state}`} aria-hidden="true">{service.state === "operational" ? "✓" : service.state === "degraded" ? "!" : "?"}</span><strong>{service.service.name}</strong><span className="reference-service-domain">{service.service.host}</span></div><span className="reference-uptime">{service.uptime === null ? "Belum ada data" : `${service.uptime.toFixed(2)}% pemeriksaan berhasil`}</span></div>
+    <div className="reference-service-head"><div><span className={`reference-service-icon status-${service.state}`} aria-hidden="true">{service.state === "operational" ? "✓" : service.state === "degraded" ? "!" : "?"}</span><strong>{service.service.name}</strong><span className="reference-service-domain">{service.service.host}</span></div><span className="reference-uptime" title="Persentase pemeriksaan yang berhasil selama rentang terpilih">{service.uptime === null ? "Uptime belum tersedia" : `${service.uptime.toFixed(2)}% uptime`}</span></div>
     <div className="reference-bars" style={{ gridTemplateColumns: `repeat(${range.buckets}, minmax(0, 1fr))` }}>{buckets.map((bucket, index) => {
-      const bucketStart = new Date(start + index * bucketMs);
-      const bucketEnd = new Date(start + (index + 1) * bucketMs);
-      const period = `${formatJakarta(bucketStart, { dateStyle: "medium", timeStyle: "short" })}–${formatJakarta(bucketEnd, { timeStyle: "short" })} WIB`;
+      const bucketStart = new Date(start.getTime() + index * bucketMs);
+      const bucketEnd = new Date(start.getTime() + (index + 1) * bucketMs);
+      const period = range.bucketLabel === "1 hari"
+        ? formatJakarta(bucketStart, { dateStyle: "medium" })
+        : `${formatJakarta(bucketStart, { dateStyle: "medium", timeStyle: "short" })}–${formatJakarta(bucketEnd, { timeStyle: "short" })} WIB`;
       const summary = bucket.count === 0 ? "Belum ada pemeriksaan" : bucket.failedCount ? `${bucket.failedCount} dari ${bucket.count} pemeriksaan gagal` : `${bucket.count} pemeriksaan berhasil`;
       const failure = bucket.latestFailure;
       const label = `${service.service.name}, ${period}: ${summary}${failure ? `. ${formatCheckResult(failure)}` : ""}`;

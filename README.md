@@ -2,7 +2,7 @@
 
 Public status page for four Bapenda Kabupaten Garut services: SAPADA, Struk Berhadiah, Simpul PAD, and the main Bapenda website. It is deployed on Vercel with Neon Postgres. The requested public domain is `status.bapenda.garutkab.go.id`.
 
-The page shows the latest HTTP result for each service and history ranges from 30 minutes to 30 days. The default is 30 minutes with one bar per minute. Green bars have successful checks, red bars have at least one failed check, and gray bars have no recorded check. Hover or select a bar to see its exact period, failure count, latest error time, and reason. Its detail link lists every check in that period with exact timestamps. The success percentage counts checks, not elapsed uptime. Open pages refresh every minute while visible. When a service has no result for 20 minutes, its state becomes unknown.
+The page shows the latest HTTP result for each service and history ranges from 30 minutes to 30 days. The default is 30 days. Each bar represents one minute, hour, or Jakarta calendar day according to the selected range. Green bars have successful checks, red bars have at least one failed check, and gray bars have no recorded check. Hover or select a bar to see its exact period, failure count, latest error time, and reason. Its detail link lists every check in that period with exact timestamps. The displayed uptime is estimated from recorded checks, not continuous observation. Open pages refresh every minute while visible. When a service has no result for 20 minutes, its state becomes unknown.
 
 ## Setup
 
