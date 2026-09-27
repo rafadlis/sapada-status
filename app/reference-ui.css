@@ -27,7 +27,7 @@
 .header-subscribe:hover { background: #3a3a40; }
 .header-subscribe:focus-visible, .reference-site a:focus-visible, .reference-site summary:focus-visible { outline: 2px solid #174b86; outline-offset: 3px; }
 
-.reference-main { padding: 1px 0 70px; }
+.reference-main { padding: 24px 0 70px; }
 .reference-overall { border: 1px solid; border-radius: 8px; overflow: hidden; }
 .reference-overall-head { display: flex; align-items: center; min-height: 55px; gap: 10px; padding: 10px 16px; }
 .reference-overall-icon { width: 16px; height: 16px; display: grid; place-items: center; flex: none; border-radius: 50%; color: white; font-size: 11px; line-height: 1; font-weight: 750; }
@@ -165,7 +165,6 @@
 .reference-site .site-footer-inner { min-height: 70px; color: #a0a6b0; }
 
 .page-loading { min-height: 350px; padding-top: 24px; padding-bottom: 72px; }
-.page-loading.reference-main { padding-top: 1px; }
 .loading-card { border: 1px solid #e5e8ec; border-radius: 8px; padding: 18px 16px; }
 .loading-overall { min-height: 110px; }
 .loading-system { margin-top: 24px; min-height: 148px; }
