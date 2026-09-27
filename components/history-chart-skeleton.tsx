@@ -11,7 +11,7 @@ export function HistoryChartSkeleton({ range, overlay = false }: {
     <div className="reference-service-legend"><div className="reference-legend" aria-hidden="true"><span><i className="reference-bar-good" />Berhasil</span><span><i className="reference-bar-failed" />Gagal</span><span><i className="reference-bar-empty" />Belum diperiksa</span></div></div>
     {services.map((service) => <div className="reference-service" key={service.key}>
       <div className="reference-service-head"><div><span className="loading-line chart-loading-icon" /><strong>{service.name}</strong><span className="reference-service-domain">{service.host}</span></div><span className="loading-line chart-loading-uptime" /></div>
-      <div className="reference-bars" style={{ gridTemplateColumns: `repeat(${range.buckets}, minmax(0, 1fr))` }} aria-hidden="true">{Array.from({ length: range.buckets }, (_, index) => <span className="chart-loading-bar" key={index} />)}</div>
+      <div className={`reference-bars${range.buckets > 60 ? " reference-bars-dense" : ""}`} style={{ gridTemplateColumns: `repeat(${range.buckets}, minmax(0, 1fr))` }} aria-hidden="true">{Array.from({ length: range.buckets }, (_, index) => <span className="chart-loading-bar" key={index} />)}</div>
       <div className="reference-bar-axis"><span>{range.label} lalu</span><span>Sekarang</span></div>
     </div>)}
   </div>;

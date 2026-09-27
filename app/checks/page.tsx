@@ -45,7 +45,7 @@ async function ChecksContent({ searchParams }: ChecksProps) {
   const now = new Date().getTime();
   const valid = Boolean(service) && Number.isSafeInteger(from) && Number.isSafeInteger(to) && Number.isSafeInteger(requestedPage)
     && requestedPage >= 1 && requestedPage <= 100 && from < to && to - from <= dayMs
-    && from >= now - 31 * dayMs && to <= now + 5 * 60 * 1000;
+    && from >= now - range.durationMs - dayMs && to <= now + 5 * 60 * 1000;
   const backHref = range.key === defaultHistoryRange.key ? "/" : `/?range=${range.key}`;
   let rows: (typeof checks.$inferSelect)[] = [];
   let hasNext = false;

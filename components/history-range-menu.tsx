@@ -20,7 +20,7 @@ export function HistoryRangeMenu({ selectedRange }: { selectedRange: string }) {
   const [pendingRange, setPendingRange] = useState<string | null>(null);
 
   return <><DropdownMenu>
-    <DropdownMenuTrigger render={<Button variant="ghost" size="sm" />}>
+    <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
       {range.label} terakhir
       <HugeiconsIcon icon={ArrowDown01Icon} strokeWidth={2} data-icon="inline-end" />
     </DropdownMenuTrigger>

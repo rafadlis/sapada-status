@@ -5,6 +5,7 @@ export const historyRanges = [
   { key: "24h", label: "24 jam", bucketLabel: "1 jam", durationMs: 24 * 60 * 60 * 1000, buckets: 24 },
   { key: "7d", label: "7 hari", bucketLabel: "1 hari", durationMs: 7 * 24 * 60 * 60 * 1000, buckets: 7 },
   { key: "30d", label: "30 hari", bucketLabel: "1 hari", durationMs: 30 * 24 * 60 * 60 * 1000, buckets: 30 },
+  { key: "90d", label: "90 hari", bucketLabel: "1 hari", durationMs: 90 * 24 * 60 * 60 * 1000, buckets: 90 },
 ] as const;
 
 export const defaultHistoryRange = historyRanges[5];

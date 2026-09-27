@@ -31,7 +31,7 @@ function ServiceHistoryRow({ service, range, now }: {
     <div className="reference-service-head"><div><span className={`reference-service-icon status-${service.state}`} aria-hidden="true">{service.state === "operational" ? "✓" : service.state === "degraded" ? "!" : "?"}</span><strong>{service.service.name}</strong>
       <Tooltip><TooltipTrigger render={<Link className="reference-service-domain" href={service.service.url} target="_blank" rel="noopener noreferrer" aria-label={`Buka ${service.service.name} di tab baru`} />}>{service.service.host}</TooltipTrigger><TooltipContent>Buka {service.service.name} di tab baru</TooltipContent></Tooltip>
     </div><Tooltip><TooltipTrigger render={<span className="reference-uptime" tabIndex={0} aria-label={`${service.uptime === null ? "Waktu aktif belum tersedia" : `${service.uptime.toFixed(2)}% waktu aktif`}. Persentase pemeriksaan yang berhasil selama rentang terpilih`} />}>{service.uptime === null ? "Waktu aktif belum tersedia" : `${service.uptime.toFixed(2)}% waktu aktif`}</TooltipTrigger><TooltipContent>Persentase pemeriksaan yang berhasil selama rentang terpilih</TooltipContent></Tooltip></div>
-    <div className="reference-bars" style={{ gridTemplateColumns: `repeat(${range.buckets}, minmax(0, 1fr))` }}>{buckets.map((bucket, index) => {
+    <div className={`reference-bars${range.buckets > 60 ? " reference-bars-dense" : ""}`} style={{ gridTemplateColumns: `repeat(${range.buckets}, minmax(0, 1fr))` }}>{buckets.map((bucket, index) => {
       const bucketStart = new Date(start.getTime() + index * bucketMs);
       const bucketEnd = new Date(start.getTime() + (index + 1) * bucketMs);
       const period = range.bucketLabel === "1 hari"
