@@ -23,4 +23,4 @@ On the current Vercel Hobby plan, each Cron job runs once per day with timing pr
 
 ## Domain
 
-`status.bapenda.garutkab.go.id` is attached to the Vercel project. The DNS administrator must add a DNS-only CNAME record in Cloudflare: name `status.bapenda`, target `520250c00b0dea70.vercel-dns-017.com`. After propagation, verify the domain and certificate in Vercel. Until then, the app is available at `sapada-status.vercel.app`.
+`status.bapenda.garutkab.go.id` is attached to the Vercel project, but public DNS does not yet resolve it. The DNS administrator must add a DNS-only A record in Cloudflare: name `status.bapenda` in the `garutkab.go.id` zone, value `76.76.21.21`. This is the record currently recommended by `vercel domains inspect status.bapenda.garutkab.go.id`. After propagation, verify the domain and certificate in Vercel. Until then, the app is available at `sapada-status.vercel.app`.
