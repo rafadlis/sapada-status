@@ -1,7 +1,10 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
 import Link from "next/link";
+import { AdminIncidentDialog } from "@/components/admin-incident-dialog";
 import { AdminSelect } from "@/components/admin-select";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SiteHeader } from "@/components/site-header";
 import { PageLoading } from "@/components/page-loading";
 import { isAdmin } from "@/lib/auth";
@@ -37,28 +40,33 @@ async function AdminContent({ searchParams }: AdminProps) {
         <div><span className={`service-dot dot-${service.state}`} /><strong>{service.service.name}: {service.state === "operational" ? "dapat diakses" : service.state === "degraded" ? "pemeriksaan gagal" : "status belum diketahui"}</strong></div>
         <span>{service.latest ? `Pemeriksaan ${formatJakarta(service.latest.checkedAt, { dateStyle: "medium", timeStyle: "medium" })} WIB` : "Belum ada pemeriksaan"}</span>
       </div>)}</div>
-      <section className="admin-section"><h2>Terbitkan informasi baru</h2>
-        <form className="admin-form" action="/api/admin/incidents" method="post">
+      <section className="admin-section"><Card className="admin-panel">
+        <CardHeader className="border-b"><CardTitle><h2>Terbitkan informasi baru</h2></CardTitle></CardHeader>
+        <CardContent><form className="admin-form admin-create-form" action="/api/admin/incidents" method="post">
           <AdminSelect id="serviceKey" label="Layanan" name="serviceKey" defaultValue={services[0].key} required options={services.map((service) => ({ value: service.key, label: service.name }))} />
           <AdminSelect id="kind" label="Jenis informasi" name="kind" defaultValue="incident" options={[{ value: "incident", label: "Gangguan" }, { value: "maintenance", label: "Pemeliharaan terjadwal" }]} />
           <p className="form-hint">Gangguan dimulai pada tahap “Sedang diselidiki”. Pemeliharaan dimulai pada tahap “Dijadwalkan”.</p>
           <label htmlFor="title">Judul</label><input id="title" name="title" maxLength={120} placeholder="Contoh: Akses layanan terganggu" required />
           <label htmlFor="message">Catatan untuk publik</label><textarea id="message" name="message" rows={5} maxLength={2000} placeholder="Jelaskan dampak, penyebab jika diketahui, dan langkah berikutnya." required />
           <button type="submit">Terbitkan informasi</button>
-        </form>
-      </section>
-      <section className="admin-section"><h2>Kelola informasi</h2>
-        {data?.incidents.length ? <div className="admin-incidents">{data.incidents.map((incident) => <article className="admin-incident" key={incident.id}>
-          <div className="admin-incident-head"><div><span className="eyebrow">{getService(incident.serviceKey)?.name ?? "Layanan"} · {kindLabel(incident.kind)} · {stateLabel(incident.state)}</span><h3>{incident.title}</h3></div><Link href={`/incidents/${incident.id}`}>Lihat publik ↗</Link></div>
-          <p>{incident.updates[0]?.message || incident.message}</p>
-          <p className="form-hint">Pembaruan terakhir {formatJakarta(incident.updatedAt, { dateStyle: "medium", timeStyle: "short" })} WIB</p>
-          <form className="admin-form update-form" action={`/api/admin/incidents/${incident.id}`} method="post">
-            <AdminSelect id={`state-${incident.id}`} label="Tahap berikutnya" name="state" defaultValue={incident.state} options={(incident.kind === "maintenance" ? ["scheduled", "in_progress", "resolved"] : ["investigating", "identified", "monitoring", "resolved"]).map((state) => ({ value: state, label: stateLabel(state) }))} />
-            <label htmlFor={`note-${incident.id}`}>Catatan pembaruan</label><textarea id={`note-${incident.id}`} name="message" rows={3} maxLength={2000} placeholder="Jelaskan perkembangan terbaru kepada publik." required />
-            <button type="submit">Terbitkan pembaruan</button>
-          </form>
-        </article>)}</div> : <p className="muted-box">Belum ada informasi yang diterbitkan.</p>}
-      </section>
+        </form></CardContent>
+      </Card></section>
+      <section className="admin-section"><Card className="admin-panel">
+        <CardHeader className="border-b"><CardTitle><h2>Kelola informasi</h2></CardTitle>
+          <CardDescription>{data?.incidents.length ?? 0} informasi terbaru</CardDescription>
+        </CardHeader>
+        <CardContent className="admin-table-content">{data?.incidents.length ? <Table aria-label="Daftar informasi layanan" className="admin-incident-table">
+          <TableHeader><TableRow>
+            <TableHead>Informasi</TableHead><TableHead>Tahap</TableHead><TableHead>Diperbarui</TableHead><TableHead className="text-right">Aksi</TableHead>
+          </TableRow></TableHeader>
+          <TableBody>{data.incidents.map((incident) => <TableRow key={incident.id}>
+            <TableCell className="admin-table-title"><strong>{incident.title}</strong><span>{getService(incident.serviceKey)?.name ?? "Layanan"} · {kindLabel(incident.kind)}</span></TableCell>
+            <TableCell><span className="admin-stage">{stateLabel(incident.state)}</span></TableCell>
+            <TableCell className="admin-table-date">{formatJakarta(incident.updatedAt, { dateStyle: "medium", timeStyle: "short" })} WIB</TableCell>
+            <TableCell><div className="admin-row-actions"><Link href={`/incidents/${incident.id}`} aria-label={`Lihat ${incident.title} di halaman publik`}>Lihat publik</Link><AdminIncidentDialog id={incident.id} title={incident.title} kind={incident.kind} state={incident.state} /></div></TableCell>
+          </TableRow>)}</TableBody>
+        </Table> : <p className="admin-empty">Belum ada informasi yang diterbitkan.</p>}</CardContent>
+      </Card></section>
       <form action="/api/admin/logout" method="post"><button className="button-text" type="submit">Keluar dari pengelola</button></form>
     </>}
   </main>;
