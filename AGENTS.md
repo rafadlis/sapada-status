@@ -9,3 +9,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 <!-- END:nextjs-agent-rules -->
 
 Use `@/components/ui/select` (the shadcn Base UI Select) for selection controls. Do not add native `<select>` elements or `NativeSelect`. The `check:conventions` script enforces this in `app/` and `components/`.
+
+Use `@/components/ui/tooltip` for supplementary hover or focus hints. Do not use native `title` attributes or custom hover-only popovers. Keep navigation and other actions on the trigger, since tooltip content is informational.
