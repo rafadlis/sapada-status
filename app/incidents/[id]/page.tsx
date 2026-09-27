@@ -9,8 +9,8 @@ import { PageLoading } from "@/components/page-loading";
 import { getDb } from "@/lib/db";
 import { incidents, incidentUpdates } from "@/lib/db/schema";
 import { kindLabel, stateLabel } from "@/lib/incident";
+import { getIncidentServices } from "@/lib/incident-service";
 import { formatJakarta } from "@/lib/status";
-import { getService } from "@/lib/services";
 
 export const metadata: Metadata = { title: "Detail pembaruan | Status Bapenda Garut" };
 
@@ -54,7 +54,7 @@ async function IncidentContent({ params }: IncidentProps) {
     .orderBy(desc(incidentUpdates.createdAt), desc(incidentUpdates.id));
   const latest = updates[0];
   const latestAt = latest?.createdAt ?? incident.updatedAt;
-  const service = getService(incident.serviceKey);
+  const affectedServices = getIncidentServices(incident.serviceKey);
   const resolved = incident.state === "resolved";
   const maintenance = incident.kind === "maintenance";
   const affectedAt = maintenance
@@ -81,12 +81,15 @@ async function IncidentContent({ params }: IncidentProps) {
     <section className="incident-detail-card" aria-labelledby="affected-title">
       <header><h2 id="affected-title">{maintenance ? "Layanan terkait" : "Layanan terdampak"}</h2></header>
       {incident.state !== "scheduled" && <div className="incident-affected-range"><time dateTime={affectedAt.toISOString()}>{formatJakarta(affectedAt, { dateStyle: "medium", timeStyle: "short" })} WIB</time><time dateTime={activityEnd.toISOString()}>{resolved ? `${formatJakarta(activityEnd, { dateStyle: "medium", timeStyle: "short" })} WIB` : "Sekarang"}</time></div>}
-      <div className="incident-affected-service"><strong>{service?.name ?? "Layanan"}</strong>{service && <Link href={service.url} target="_blank" rel="noopener noreferrer">{service.host}</Link>}</div>
-      {incident.state === "scheduled" ? <p className="incident-scheduled-note">Pemeliharaan belum dimulai. Perkembangan jadwal tersedia pada pembaruan di bawah.</p> : <div className="incident-impact-track" role="img" aria-label={`${service?.name ?? "Layanan"}: ${maintenance ? "pemeliharaan" : "gangguan"} dilaporkan dari ${formatJakarta(affectedAt, { dateStyle: "medium", timeStyle: "short" })} WIB hingga ${resolved ? `${formatJakarta(activityEnd, { dateStyle: "medium", timeStyle: "short" })} WIB` : "sekarang"}`}>
-        <span className="incident-impact-before" style={{ width: `${widths.before}%` }} />
-        <span className={`incident-impact-affected impact-${maintenance ? "maintenance" : "incident"}`} style={{ width: `${widths.affected}%` }} />
-        {resolved && <span className="incident-impact-after" style={{ width: `${widths.after}%` }} />}
-      </div>}
+      <div className="incident-affected-list">{affectedServices.map((service) => <div className="incident-affected-entry" key={service.key}>
+        <div className="incident-affected-service"><strong>{service.name}</strong><Link href={service.url} target="_blank" rel="noopener noreferrer">{service.host}</Link></div>
+        {incident.state !== "scheduled" && <div className="incident-impact-track" role="img" aria-label={`${service.name}: ${maintenance ? "pemeliharaan" : "gangguan"} dilaporkan dari ${formatJakarta(affectedAt, { dateStyle: "medium", timeStyle: "short" })} WIB hingga ${resolved ? `${formatJakarta(activityEnd, { dateStyle: "medium", timeStyle: "short" })} WIB` : "sekarang"}`}>
+          <span className="incident-impact-before" style={{ width: `${widths.before}%` }} />
+          <span className={`incident-impact-affected impact-${maintenance ? "maintenance" : "incident"}`} style={{ width: `${widths.affected}%` }} />
+          {resolved && <span className="incident-impact-after" style={{ width: `${widths.after}%` }} />}
+        </div>}
+      </div>)}</div>
+      {incident.state === "scheduled" && <p className="incident-scheduled-note">Pemeliharaan belum dimulai. Perkembangan jadwal tersedia pada pembaruan di bawah.</p>}
     </section>
 
     <section id="pembaruan" className="incident-detail-card incident-updates-card" aria-labelledby="updates-title">

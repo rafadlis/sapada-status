@@ -7,6 +7,7 @@ import { IncidentRow } from "@/components/incident-row";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
 import { PageLoading } from "@/components/page-loading";
 import { getHistoryRange } from "@/lib/history-range";
+import { incidentAffectsService } from "@/lib/incident-service";
 import { getStatusData } from "@/lib/status";
 
 type HomeProps = { searchParams: Promise<{ range?: string | string[] }> };
@@ -31,7 +32,7 @@ async function LiveStatus({ range }: { range: ReturnType<typeof getHistoryRange>
   const active = data.incidents.filter((incident) => incident.state !== "resolved");
   const serviceStatuses = data.services.map((service) => ({
     ...service,
-    state: active.some((incident) => incident.serviceKey === service.service.key && incident.kind !== "maintenance") ? "degraded" as const : service.state,
+    state: active.some((incident) => incidentAffectsService(incident.serviceKey, service.service.key) && incident.kind !== "maintenance") ? "degraded" as const : service.state,
   }));
   const hasDisruption = active.some((incident) => incident.kind !== "maintenance");
   const state = hasDisruption || data.state === "degraded" ? "degraded" : data.state;

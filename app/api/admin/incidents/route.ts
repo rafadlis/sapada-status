@@ -4,7 +4,7 @@ import { isAdmin, sameOrigin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { initialState, isIncidentKind } from "@/lib/incident";
 import { incidentHistoryTag } from "@/lib/incident-history";
-import { getService } from "@/lib/services";
+import { isIncidentServiceKey } from "@/lib/incident-service";
 
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return new Response("Forbidden", { status: 403 });
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   const message = String(form.get("message") ?? "").trim();
   const kind = String(form.get("kind") ?? "incident");
   const serviceKey = String(form.get("serviceKey") ?? "");
-  if (!title || !message || title.length > 120 || message.length > 2000 || !isIncidentKind(kind) || !getService(serviceKey)) {
+  if (!title || !message || title.length > 120 || message.length > 2000 || !isIncidentKind(kind) || !isIncidentServiceKey(serviceKey)) {
     return Response.redirect(new URL("/admin?error=validation", request.url), 303);
   }
   const db = getDb();

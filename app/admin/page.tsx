@@ -10,7 +10,8 @@ import { PageLoading } from "@/components/page-loading";
 import { isAdmin } from "@/lib/auth";
 import { formatJakarta, getStatusData } from "@/lib/status";
 import { kindLabel, stateLabel } from "@/lib/incident";
-import { getService, services } from "@/lib/services";
+import { allServicesKey, incidentServiceLabel } from "@/lib/incident-service";
+import { services } from "@/lib/services";
 
 type AdminProps = { searchParams: Promise<{ error?: string; created?: string; updated?: string }> };
 
@@ -43,7 +44,7 @@ async function AdminContent({ searchParams }: AdminProps) {
       <section className="admin-section"><Card className="admin-panel">
         <CardHeader className="border-b"><CardTitle><h2>Terbitkan informasi baru</h2></CardTitle></CardHeader>
         <CardContent><form className="admin-form admin-create-form" action="/api/admin/incidents" method="post">
-          <AdminSelect id="serviceKey" label="Layanan" name="serviceKey" defaultValue={services[0].key} required options={services.map((service) => ({ value: service.key, label: service.name }))} />
+          <AdminSelect id="serviceKey" label="Layanan" name="serviceKey" defaultValue={services[0].key} required options={[{ value: allServicesKey, label: "Semua layanan" }, ...services.map((service) => ({ value: service.key, label: service.name }))]} />
           <AdminSelect id="kind" label="Jenis informasi" name="kind" defaultValue="incident" options={[{ value: "incident", label: "Gangguan" }, { value: "maintenance", label: "Pemeliharaan terjadwal" }]} />
           <p className="form-hint">Gangguan dimulai pada tahap “Sedang diselidiki”. Pemeliharaan dimulai pada tahap “Dijadwalkan”.</p>
           <label htmlFor="title">Judul</label><input id="title" name="title" maxLength={120} placeholder="Contoh: Akses layanan terganggu" required />
@@ -60,7 +61,7 @@ async function AdminContent({ searchParams }: AdminProps) {
             <TableHead>Informasi</TableHead><TableHead>Tahap</TableHead><TableHead>Diperbarui</TableHead><TableHead className="text-right">Aksi</TableHead>
           </TableRow></TableHeader>
           <TableBody>{data.incidents.map((incident) => <TableRow key={incident.id}>
-            <TableCell className="admin-table-title"><strong>{incident.title}</strong><span>{getService(incident.serviceKey)?.name ?? "Layanan"} · {kindLabel(incident.kind)}</span></TableCell>
+            <TableCell className="admin-table-title"><strong>{incident.title}</strong><span>{incidentServiceLabel(incident.serviceKey)} · {kindLabel(incident.kind)}</span></TableCell>
             <TableCell><span className="admin-stage">{stateLabel(incident.state)}</span></TableCell>
             <TableCell className="admin-table-date">{formatJakarta(incident.updatedAt, { dateStyle: "medium", timeStyle: "short" })} WIB</TableCell>
             <TableCell><div className="admin-row-actions"><Link href={`/incidents/${incident.id}`} aria-label={`Lihat ${incident.title} di halaman publik`}>Lihat publik</Link><AdminIncidentDialog id={incident.id} title={incident.title} kind={incident.kind} state={incident.state} /></div></TableCell>
