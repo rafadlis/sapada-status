@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
 import Link from "next/link";
+import { AdminSelect } from "@/components/admin-select";
 import { SiteHeader } from "@/components/site-header";
 import { PageLoading } from "@/components/page-loading";
 import { isAdmin } from "@/lib/auth";
@@ -38,8 +39,8 @@ async function AdminContent({ searchParams }: AdminProps) {
       </div>)}</div>
       <section className="admin-section"><h2>Terbitkan informasi baru</h2>
         <form className="admin-form" action="/api/admin/incidents" method="post">
-          <label htmlFor="serviceKey">Layanan</label><select id="serviceKey" name="serviceKey" defaultValue={services[0].key} required>{services.map((service) => <option key={service.key} value={service.key}>{service.name}</option>)}</select>
-          <label htmlFor="kind">Jenis informasi</label><select id="kind" name="kind" defaultValue="incident"><option value="incident">Gangguan</option><option value="maintenance">Pemeliharaan terjadwal</option></select>
+          <AdminSelect id="serviceKey" label="Layanan" name="serviceKey" defaultValue={services[0].key} required options={services.map((service) => ({ value: service.key, label: service.name }))} />
+          <AdminSelect id="kind" label="Jenis informasi" name="kind" defaultValue="incident" options={[{ value: "incident", label: "Gangguan" }, { value: "maintenance", label: "Pemeliharaan terjadwal" }]} />
           <p className="form-hint">Gangguan dimulai pada tahap “Sedang diselidiki”. Pemeliharaan dimulai pada tahap “Dijadwalkan”.</p>
           <label htmlFor="title">Judul</label><input id="title" name="title" maxLength={120} placeholder="Contoh: Akses layanan terganggu" required />
           <label htmlFor="message">Catatan untuk publik</label><textarea id="message" name="message" rows={5} maxLength={2000} placeholder="Jelaskan dampak, penyebab jika diketahui, dan langkah berikutnya." required />
@@ -52,7 +53,7 @@ async function AdminContent({ searchParams }: AdminProps) {
           <p>{incident.updates[0]?.message || incident.message}</p>
           <p className="form-hint">Pembaruan terakhir {formatJakarta(incident.updatedAt, { dateStyle: "medium", timeStyle: "short" })} WIB</p>
           <form className="admin-form update-form" action={`/api/admin/incidents/${incident.id}`} method="post">
-            <label htmlFor={`state-${incident.id}`}>Tahap berikutnya</label><select id={`state-${incident.id}`} name="state" defaultValue={incident.state}>{(incident.kind === "maintenance" ? ["scheduled", "in_progress", "resolved"] : ["investigating", "identified", "monitoring", "resolved"]).map((state) => <option key={state} value={state}>{stateLabel(state)}</option>)}</select>
+            <AdminSelect id={`state-${incident.id}`} label="Tahap berikutnya" name="state" defaultValue={incident.state} options={(incident.kind === "maintenance" ? ["scheduled", "in_progress", "resolved"] : ["investigating", "identified", "monitoring", "resolved"]).map((state) => ({ value: state, label: stateLabel(state) }))} />
             <label htmlFor={`note-${incident.id}`}>Catatan pembaruan</label><textarea id={`note-${incident.id}`} name="message" rows={3} maxLength={2000} placeholder="Jelaskan perkembangan terbaru kepada publik." required />
             <button type="submit">Terbitkan pembaruan</button>
           </form>

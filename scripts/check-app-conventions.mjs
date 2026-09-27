@@ -21,6 +21,9 @@ function scan(directory) {
     if (!/\.[jt]sx$/.test(entry.name)) continue;
     const source = readFileSync(path, "utf8");
     if (/<a\b/i.test(source)) problems.push(`${relative(root, path)} uses <a> instead of next/link`);
+    if (/<select\b/.test(source) || /<NativeSelect\b/.test(source) || source.includes("@/components/ui/native-select")) {
+      problems.push(`${relative(root, path)} uses a native select instead of @/components/ui/select`);
+    }
     if (/prefetch=\{false\}/.test(source)) problems.push(`${relative(root, path)} disables partial prefetching`);
   }
 }
@@ -36,5 +39,5 @@ if (problems.length) {
   for (const problem of problems) console.error(`✗ ${problem}`);
   process.exitCode = 1;
 } else {
-  console.log(`✓ ${pages} pages have loading.tsx; Link and caching conventions pass`);
+  console.log(`✓ ${pages} pages have loading.tsx; Link, Select, and caching conventions pass`);
 }
