@@ -1,16 +1,26 @@
 import { connection } from "next/server";
+import { Suspense } from "react";
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
+import { PageLoading } from "@/components/page-loading";
 import { isAdmin } from "@/lib/auth";
 import { formatJakarta, getStatusData } from "@/lib/status";
 import { kindLabel, stateLabel } from "@/lib/incident";
 
-export default async function AdminPage({ searchParams }: { searchParams: Promise<{ error?: string; created?: string; updated?: string }> }) {
+type AdminProps = { searchParams: Promise<{ error?: string; created?: string; updated?: string }> };
+
+export default function AdminPage({ searchParams }: AdminProps) {
+  return <div className="status-site"><SiteHeader />
+    <Suspense fallback={<PageLoading page="admin" />}><AdminContent searchParams={searchParams} /></Suspense>
+  </div>;
+}
+
+async function AdminContent({ searchParams }: AdminProps) {
   await connection();
   const params = await searchParams;
   const authorized = await isAdmin();
   const data = authorized ? await getStatusData() : null;
-  return <div className="status-site"><SiteHeader /><main className="site-width subpage-main admin-main">
+  return <main className="site-width subpage-main admin-main">
     <span className="eyebrow">PENGELOLA SAPADA</span><h1>{authorized ? "Kelola pembaruan" : "Masuk sebagai pengelola"}</h1>
     {params.error === "login" && !authorized && <p className="form-feedback form-error" role="alert">Kata sandi tidak sesuai. Coba lagi.</p>}
     {params.error === "validation" && authorized && <p className="form-feedback form-error" role="alert">Lengkapi judul dan catatan publik sesuai batas karakter, lalu pilih tahap yang tersedia.</p>}
@@ -22,5 +32,5 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <section className="admin-section"><h2>Kelola informasi</h2>{data?.incidents.length ? <div className="admin-incidents">{data.incidents.map((incident) => <article className="admin-incident" key={incident.id}><div className="admin-incident-head"><div><span className="eyebrow">{kindLabel(incident.kind)} · {stateLabel(incident.state)}</span><h3>{incident.title}</h3></div><Link href={`/incidents/${incident.id}`}>Lihat publik ↗</Link></div><p>{incident.updates[0]?.message || incident.message}</p><p className="form-hint">Pembaruan terakhir {formatJakarta(incident.updatedAt, { dateStyle: "medium", timeStyle: "short" })} WIB</p><form className="admin-form update-form" action={`/api/admin/incidents/${incident.id}`} method="post"><label htmlFor={`state-${incident.id}`}>Tahap berikutnya</label><select id={`state-${incident.id}`} name="state" defaultValue={incident.state}>{(incident.kind === "maintenance" ? ["scheduled", "in_progress", "resolved"] : ["investigating", "identified", "monitoring", "resolved"]).map((state) => <option key={state} value={state}>{stateLabel(state)}</option>)}</select><label htmlFor={`note-${incident.id}`}>Catatan pembaruan</label><textarea id={`note-${incident.id}`} name="message" rows={3} maxLength={2000} placeholder="Jelaskan perkembangan terbaru kepada publik." required /><button type="submit">Terbitkan pembaruan</button></form></article>)}</div> : <p className="muted-box">Belum ada informasi yang diterbitkan.</p>}</section>
         <form action="/api/admin/logout" method="post"><button className="button-text" type="submit">Keluar dari pengelola</button></form>
       </>}
-  </main></div>;
+  </main>;
 }

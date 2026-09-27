@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { connection } from "next/server";
 import Link from "next/link";
 import { and, desc, gte, lt } from "drizzle-orm";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
+import { PageLoading } from "@/components/page-loading";
 import { formatCheckResult } from "@/lib/check-result";
 import { getDb } from "@/lib/db";
 import { checks } from "@/lib/db/schema";
@@ -22,7 +24,15 @@ function single(value: string | string[] | undefined) {
   return typeof value === "string" ? value : undefined;
 }
 
-export default async function ChecksPage({ searchParams }: { searchParams: Promise<Query> }) {
+type ChecksProps = { searchParams: Promise<Query> };
+
+export default function ChecksPage({ searchParams }: ChecksProps) {
+  return <div className="status-site"><SiteHeader />
+    <Suspense fallback={<PageLoading page="checks" />}><ChecksContent searchParams={searchParams} /></Suspense>
+    <SiteFooter /></div>;
+}
+
+async function ChecksContent({ searchParams }: ChecksProps) {
   await connection();
   const params = await searchParams;
   const range = getHistoryRange(params.range);
@@ -58,8 +68,6 @@ export default async function ChecksPage({ searchParams }: { searchParams: Promi
   const pageHref = (page: number) => `/checks?from=${from}&to=${to}&range=${range.key}&page=${page}`;
 
   return (
-    <div className="status-site">
-      <SiteHeader />
       <main className="site-width check-detail-page">
         <Link className="back-link" href={backHref}>← Kembali ke status</Link>
         <p className="kicker">Riwayat pemantauan</p>
@@ -75,11 +83,10 @@ export default async function ChecksPage({ searchParams }: { searchParams: Promi
                 </article>
               ))}</div>}
         {valid && !unavailable && (requestedPage > 1 || hasNext) && <nav className="check-pagination" aria-label="Halaman riwayat pemeriksaan">
-          {requestedPage > 1 && <Link href={pageHref(requestedPage - 1)} prefetch={false}>Pemeriksaan lebih baru</Link>}
+          {requestedPage > 1 && <Link href={pageHref(requestedPage - 1)}>Pemeriksaan lebih baru</Link>}
           <span>Halaman {requestedPage}</span>
-          {hasNext && <Link href={pageHref(requestedPage + 1)} prefetch={false}>Pemeriksaan lebih lama</Link>}
+          {hasNext && <Link href={pageHref(requestedPage + 1)}>Pemeriksaan lebih lama</Link>}
         </nav>}
-      </main><SiteFooter />
-    </div>
+      </main>
   );
 }

@@ -29,7 +29,7 @@ export function HistoryChart({ history, selectedRange, now, latest, monitorState
   const uptime = history.length ? 100 * history.filter((check) => check.ok).length / history.length : null;
 
   return <section className="reference-system-card" aria-labelledby="system-status-title">
-    <div className="reference-system-head"><h2 id="system-status-title">Status sistem</h2><details className="reference-range-menu"><summary>{range.label} terakhir <span aria-hidden="true">⌄</span></summary><nav aria-label="Rentang riwayat pemeriksaan">{historyRanges.map((option) => <Link key={option.key} href={option.key === "60m" ? "/" : `/?range=${option.key}`} prefetch={false} aria-current={range.key === option.key ? "page" : undefined}>{option.label}</Link>)}</nav></details></div>
+    <div className="reference-system-head"><h2 id="system-status-title">Status sistem</h2><details className="reference-range-menu"><summary>{range.label} terakhir <span aria-hidden="true">⌄</span></summary><nav aria-label="Rentang riwayat pemeriksaan">{historyRanges.map((option) => <Link key={option.key} href={option.key === "60m" ? "/" : `/?range=${option.key}`} aria-current={range.key === option.key ? "page" : undefined}>{option.label}</Link>)}</nav></details></div>
     <div className="reference-service"><div className="reference-service-head"><div><span className={`reference-service-icon status-${monitorState}`} aria-hidden="true">{monitorState === "operational" ? "✓" : monitorState === "degraded" ? "!" : "?"}</span><strong>SAPADA</strong><span className="reference-service-domain">sapada.bapenda.garutkab.go.id</span></div><span className="reference-uptime">{uptime === null ? "Belum ada data" : `${uptime.toFixed(2)}% pemeriksaan berhasil`}</span></div>
       <div className="reference-bars" style={{ gridTemplateColumns: `repeat(${range.buckets}, minmax(0, 1fr))` }}>{buckets.map((bucket, index) => {
         const bucketStart = new Date(start + index * bucketMs);
@@ -39,7 +39,7 @@ export function HistoryChart({ history, selectedRange, now, latest, monitorState
         const failure = bucket.latestFailure;
         const label = `${period}: ${summary}${failure ? `. ${formatCheckResult(failure)}` : ""}`;
         return <details key={index} name="history-check" className={`reference-bar-detail ${index >= range.buckets / 2 ? "reference-bar-right" : ""}`}><summary title={label} aria-label={label} className={`reference-bar ${bucket.count === 0 ? "reference-bar-empty" : bucket.failedCount ? "reference-bar-failed" : "reference-bar-good"}`} />
-          <div className="reference-bar-popover"><strong>{period}</strong><span>{summary}</span>{failure && <span>Terakhir gagal: {formatJakarta(failure.checkedAt, { dateStyle: "medium", timeStyle: "medium" })} WIB. {formatCheckResult(failure)}</span>}{bucket.count > 0 && <Link href={`/checks?from=${bucketStart.getTime()}&to=${bucketEnd.getTime()}&range=${range.key}`} prefetch={false}>Lihat semua pemeriksaan</Link>}</div>
+          <div className="reference-bar-popover"><strong>{period}</strong><span>{summary}</span>{failure && <span>Terakhir gagal: {formatJakarta(failure.checkedAt, { dateStyle: "medium", timeStyle: "medium" })} WIB. {formatCheckResult(failure)}</span>}{bucket.count > 0 && <Link href={`/checks?from=${bucketStart.getTime()}&to=${bucketEnd.getTime()}&range=${range.key}`}>Lihat semua pemeriksaan</Link>}</div>
         </details>;
       })}</div>
       <div className="reference-bar-axis"><span>{range.label} lalu</span><span>1 batang = {range.bucketLabel}</span><span>Sekarang</span></div>

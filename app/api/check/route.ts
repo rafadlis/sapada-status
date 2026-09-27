@@ -2,8 +2,6 @@ import { getDb } from "@/lib/db";
 import { checks } from "@/lib/db/schema";
 import { checkTimeoutMs } from "@/lib/check-result";
 
-export const runtime = "nodejs";
-
 function authorized(request: Request, secret: string | undefined) {
   return Boolean(secret && request.headers.get("authorization") === `Bearer ${secret}`);
 }

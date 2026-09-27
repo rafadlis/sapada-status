@@ -1,7 +1,9 @@
 import { sql } from "drizzle-orm";
+import { revalidateTag } from "next/cache";
 import { isAdmin, sameOrigin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { initialState, isIncidentKind } from "@/lib/incident";
+import { incidentHistoryTag } from "@/lib/incident-history";
 
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return new Response("Forbidden", { status: 403 });
@@ -21,5 +23,6 @@ export async function POST(request: Request) {
     RETURNING id, created_at
   ) INSERT INTO incident_updates (incident_id, state, message, created_at)
     SELECT id, ${state}, ${message}, created_at FROM created`);
+  revalidateTag(incidentHistoryTag, { expire: 0 });
   return Response.redirect(new URL("/admin?created=1", request.url), 303);
 }

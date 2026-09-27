@@ -1,4 +1,5 @@
 import { desc, eq } from "drizzle-orm";
+import { connection } from "next/server";
 import { getDb } from "@/lib/db";
 import { incidents, incidentUpdates } from "@/lib/db/schema";
 import { stateLabel } from "@/lib/incident";
@@ -6,6 +7,7 @@ import { stateLabel } from "@/lib/incident";
 function escapeXml(value: string) { return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[character] ?? character); }
 
 export async function GET(request: Request) {
+  await connection();
   const db = getDb();
   const updates = await db.select({ update: incidentUpdates, incident: incidents }).from(incidentUpdates).innerJoin(incidents, eq(incidentUpdates.incidentId, incidents.id))
     .orderBy(desc(incidentUpdates.createdAt)).limit(30);

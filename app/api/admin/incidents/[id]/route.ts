@@ -1,8 +1,10 @@
 import { eq, sql } from "drizzle-orm";
+import { revalidateTag } from "next/cache";
 import { isAdmin, sameOrigin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { incidents } from "@/lib/db/schema";
 import { isValidIncidentState } from "@/lib/incident";
+import { incidentHistoryTag } from "@/lib/incident-history";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   if (!sameOrigin(request)) return new Response("Forbidden", { status: 403 });
@@ -26,5 +28,6 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     WHERE id = ${incidentId} RETURNING id
   ) INSERT INTO incident_updates (incident_id, state, message, created_at)
     SELECT id, ${state}, ${message}, ${updatedAt} FROM changed`);
+  revalidateTag(incidentHistoryTag, { expire: 0 });
   return Response.redirect(new URL("/admin?updated=1", request.url), 303);
 }
