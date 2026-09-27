@@ -8,7 +8,7 @@ import { PageLoading } from "@/components/page-loading";
 import { formatCheckResult } from "@/lib/check-result";
 import { getDb } from "@/lib/db";
 import { checks } from "@/lib/db/schema";
-import { getHistoryRange } from "@/lib/history-range";
+import { defaultHistoryRange, getHistoryRange } from "@/lib/history-range";
 import { formatJakarta } from "@/lib/status";
 
 export const metadata: Metadata = {
@@ -43,7 +43,7 @@ async function ChecksContent({ searchParams }: ChecksProps) {
   const valid = Number.isSafeInteger(from) && Number.isSafeInteger(to) && Number.isSafeInteger(requestedPage)
     && requestedPage >= 1 && requestedPage <= 100 && from < to && to - from <= dayMs
     && from >= now - 31 * dayMs && to <= now + 5 * 60 * 1000;
-  const backHref = range.key === "60m" ? "/" : `/?range=${range.key}`;
+  const backHref = range.key === defaultHistoryRange.key ? "/" : `/?range=${range.key}`;
   let rows: (typeof checks.$inferSelect)[] = [];
   let hasNext = false;
   let unavailable = false;
