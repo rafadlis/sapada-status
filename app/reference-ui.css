@@ -11,7 +11,7 @@
 .reference-site .site-header { border-bottom: 0; }
 .reference-site .site-header-inner { min-height: 68px; }
 .reference-site .brand { gap: 9px; }
-.reference-site .brand-symbol { width: 31px; height: 31px; }
+.reference-site .brand-symbol { width: auto; height: 36px; object-fit: contain; }
 .reference-site .brand-copy strong { font-size: 21px; color: #101114; letter-spacing: -.045em; }
 .reference-site .brand-copy small { font-size: 10px; color: #71788a; }
 .header-subscribe { display: inline-flex; align-items: center; min-height: 35px; padding: 0 13px; border-radius: 5px; background: #242429; color: white; text-decoration: none; font-size: 12px; font-weight: 650; }

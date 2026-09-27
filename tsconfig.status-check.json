@@ -15,7 +15,7 @@
     "lib/auth.ts",
     "lib/status.ts",
     "lib/history-range.ts",
-    "components/status-mark.tsx",
+    "components/site-header.tsx",
     "lib/db/index.ts",
     "lib/db/schema.ts",
     "drizzle.config.ts"

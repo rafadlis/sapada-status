@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { StatusMark } from "@/components/status-mark";
+import Image from "next/image";
 
 export function SiteHeader() {
   return <header className="site-header"><div className="site-width site-header-inner">
-    <Link className="brand" href="/" aria-label="Beranda Status Bapenda Garut"><StatusMark className="brand-symbol" /><span className="brand-copy"><strong>Bapenda Garut</strong><small>Status layanan</small></span></Link>
+    <Link className="brand" href="/" aria-label="Beranda Status Bapenda Garut"><Image className="brand-symbol" src="/bapenda-mark.png" alt="" width={119} height={180} priority /><span className="brand-copy"><strong>BAPENDA</strong><small>Status layanan Garut</small></span></Link>
     <Link className="header-subscribe" href="/rss.xml">RSS pembaruan</Link>
   </div></header>;
 }
