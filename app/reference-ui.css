@@ -157,7 +157,7 @@
 .incident-update:not(:last-child)::before { content: ""; position: absolute; top: 10px; bottom: 0; left: 6px; width: 1px; background: var(--update-color); }
 .incident-update.update-resolved { --update-color: var(--reference-green); }
 .incident-update.update-maintenance { --update-color: #e4b765; }
-.incident-update-dot { position: relative; z-index: 1; width: 7px; height: 7px; margin-top: 4px; border-radius: 50%; background: var(--update-color); }
+.incident-update-dot { position: relative; z-index: 1; width: 7px; height: 7px; margin: 4px 0 0 3px; border-radius: 50%; background: var(--update-color); }
 .incident-update-content { min-width: 0; }
 .incident-update h3 { margin: 0 0 12px; font-size: 13px; font-weight: 650; line-height: 1.4; }
 .incident-update p { margin: 0 0 12px; font-size: 13px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
