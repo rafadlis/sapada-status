@@ -12,12 +12,17 @@ const labels: Record<Page, string> = {
 };
 
 export function PageLoading({ page, range = defaultHistoryRange }: { page: Page; range?: ReturnType<typeof getHistoryRange> }) {
-  const reference = page === "home" || page === "history";
-  return <main className={`site-width page-loading ${reference ? `reference-${page === "home" ? "main" : "history-page"}` : "subpage-main"}`} role="status" aria-live="polite">
+  const reference = page === "home" || page === "history" || page === "incident";
+  return <main className={`site-width page-loading ${reference ? `reference-${page === "home" ? "main" : page === "incident" ? "incident-page" : "history-page"}` : "subpage-main"}`} role="status" aria-live="polite">
     <span className="visually-hidden">{labels[page]}…</span>
     {page === "home" ? <>
       <div className="loading-card loading-overall"><span className="loading-line loading-title" /><span className="loading-line loading-body" /></div>
       <HistoryChartSkeleton range={range} />
+    </> : page === "incident" ? <>
+      <span className="loading-line loading-short" />
+      <div className="loading-card loading-incident-summary"><span className="loading-line loading-title" /><span className="loading-line loading-body" /><span className="loading-line loading-short" /></div>
+      <div className="loading-card loading-incident-section"><span className="loading-line loading-short" /><span className="loading-line loading-bars" /></div>
+      <div className="loading-card loading-incident-section"><span className="loading-line loading-short" /><span className="loading-line loading-body" /><span className="loading-line loading-body" /></div>
     </> : <>
       <span className="loading-line loading-short" />
       <span className="loading-line loading-title" />
