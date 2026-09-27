@@ -44,7 +44,9 @@
 .reference-service-icon { display: inline-grid; place-items: center; width: 16px; height: 16px; flex: none; border-radius: 50%; background: #9eabb7; color: white; font-size: 10px; font-weight: 750; }
 .reference-service-icon.status-operational { background: var(--reference-green); }
 .reference-service-icon.status-degraded { background: var(--reference-red); }
-.reference-service-domain { color: #8992a2; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reference-service-domain { color: #68788e; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: underline; text-decoration-color: #c3ccd6; text-underline-offset: 3px; }
+.reference-service-domain:hover { color: #174b86; text-decoration-color: currentColor; }
+.reference-service-domain:focus-visible { outline: 2px solid #174b86; outline-offset: 3px; }
 .reference-uptime { white-space: nowrap; font-size: 12px; color: var(--reference-muted); }
 .reference-bars { display: grid; gap: 3px; height: 20px; margin-top: 11px; }
 .reference-bar-detail { position: relative; min-width: 0; }
