@@ -1,4 +1,6 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
+import { ComponentDisclosure, ComponentDisclosurePanel, ComponentDisclosureToggle } from "@/components/component-disclosure";
 import { HistoryRangeMenu } from "@/components/history-range-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCheckResult } from "@/lib/check-result";
@@ -16,20 +18,24 @@ export function HistoryChart({ services, components, selectedRange, now }: {
   return <section className="reference-system-card" aria-labelledby="system-status-title">
     <div className="reference-system-head"><h2 id="system-status-title">Status sistem</h2><HistoryRangeMenu key={range.key} selectedRange={range.key} /></div>
     <div className="reference-service-legend"><div className="reference-legend" aria-label="Legenda pemeriksaan"><span><i className="reference-bar-good" aria-hidden="true" />Berhasil</span><span><i className="reference-bar-mixed" aria-hidden="true" />Sebagian gagal</span><span><i className="reference-bar-failed" aria-hidden="true" />Gagal</span><span><i className="reference-bar-empty" aria-hidden="true" />Belum diperiksa</span></div></div>
-    {services.map((service) => <div className="reference-service-group" key={service.service.key}>
-      <ServiceHistoryRow service={service} range={range} now={now} />
-      {service.service.key === "sapada" && <div className="reference-components" aria-label="Integrasi SAPADA">
-        <h3>Integrasi SAPADA</h3>
-        {components.map((component) => <ServiceHistoryRow key={component.service.key} service={component} range={range} now={now} />)}
-      </div>}
-    </div>)}
+    {services.map((service) => service.service.key === "sapada"
+      ? <ComponentDisclosure key={service.service.key}>
+        <ServiceHistoryRow service={service} range={range} now={now} afterName={<ComponentDisclosureToggle count={components.length} />} />
+        <ComponentDisclosurePanel>
+          {components.map((component) => <ServiceHistoryRow key={component.service.key} service={component} range={range} now={now} />)}
+        </ComponentDisclosurePanel>
+      </ComponentDisclosure>
+      : <div className="reference-service-group" key={service.service.key}>
+        <ServiceHistoryRow service={service} range={range} now={now} />
+      </div>)}
   </section>;
 }
 
-function ServiceHistoryRow({ service, range, now }: {
+function ServiceHistoryRow({ service, range, now, afterName }: {
   service: ServiceStatus;
   range: ReturnType<typeof getHistoryRange>;
   now: Date;
+  afterName?: ReactNode;
 }) {
   const { start, bucketMs } = getHistoryWindow(range, now);
   const buckets = service.history;
@@ -37,7 +43,7 @@ function ServiceHistoryRow({ service, range, now }: {
   const stateLabel = service.state === "operational" ? "Beroperasi" : service.state === "degraded" ? "Terganggu" : "Belum diketahui";
 
   return <div className="reference-service" aria-label={`${service.service.name}: ${stateLabel}`}>
-    <div className="reference-service-head"><div><span className={`reference-service-icon status-${service.state}`} aria-hidden="true">{service.state === "operational" ? "✓" : service.state === "degraded" ? "!" : "?"}</span><strong>{service.service.name}</strong>
+    <div className="reference-service-head"><div><span className={`reference-service-icon status-${service.state}`} aria-hidden="true">{service.state === "operational" ? "✓" : service.state === "degraded" ? "!" : "?"}</span><strong>{service.service.name}</strong>{afterName}
       {publicService && <Tooltip><TooltipTrigger render={<Link className="reference-service-domain" href={publicService.url} target="_blank" rel="noopener noreferrer" aria-label={`Buka ${service.service.name} di tab baru`} />}>{publicService.host}</TooltipTrigger><TooltipContent>Buka {service.service.name} di tab baru</TooltipContent></Tooltip>}
     </div><Tooltip><TooltipTrigger render={<span className="reference-uptime" tabIndex={0} aria-label={`${service.uptime === null ? "Waktu aktif belum tersedia" : `${service.uptime.toFixed(2)}% waktu aktif`}. Persentase pemeriksaan yang berhasil selama rentang terpilih`} />}>{service.uptime === null ? "Waktu aktif belum tersedia" : `${service.uptime.toFixed(2)}% waktu aktif`}</TooltipTrigger><TooltipContent>Persentase pemeriksaan yang berhasil selama rentang terpilih</TooltipContent></Tooltip></div>
     <div className={`reference-bars${range.buckets > 60 ? " reference-bars-dense" : ""}`} style={{ gridTemplateColumns: `repeat(${range.buckets}, minmax(0, 1fr))` }}>{buckets.map((bucket, index) => {
