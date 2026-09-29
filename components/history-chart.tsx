@@ -13,7 +13,7 @@ export function HistoryChart({ services, selectedRange, now }: {
   const range = getHistoryRange(selectedRange);
   return <section className="reference-system-card" aria-labelledby="system-status-title">
     <div className="reference-system-head"><h2 id="system-status-title">Status sistem</h2><HistoryRangeMenu key={range.key} selectedRange={range.key} /></div>
-    <div className="reference-service-legend"><div className="reference-legend" aria-label="Legenda pemeriksaan"><span><i className="reference-bar-good" aria-hidden="true" />Berhasil</span><span><i className="reference-bar-failed" aria-hidden="true" />Gagal</span><span><i className="reference-bar-empty" aria-hidden="true" />Belum diperiksa</span></div></div>
+    <div className="reference-service-legend"><div className="reference-legend" aria-label="Legenda pemeriksaan"><span><i className="reference-bar-good" aria-hidden="true" />Berhasil</span><span><i className="reference-bar-mixed" aria-hidden="true" />Sebagian gagal</span><span><i className="reference-bar-failed" aria-hidden="true" />Gagal</span><span><i className="reference-bar-empty" aria-hidden="true" />Belum diperiksa</span></div></div>
     {services.map((service) => <ServiceHistoryRow key={service.service.key} service={service} range={range} now={now} />)}
   </section>;
 }
@@ -37,10 +37,11 @@ function ServiceHistoryRow({ service, range, now }: {
       const period = range.bucketLabel === "1 hari"
         ? formatJakarta(bucketStart, { dateStyle: "medium" })
         : `${formatJakarta(bucketStart, { dateStyle: "medium", timeStyle: "short" })}–${formatJakarta(bucketEnd, { timeStyle: "short" })} WIB`;
-      const summary = bucket.count === 0 ? "Belum ada pemeriksaan" : bucket.failedCount ? `${bucket.failedCount} dari ${bucket.count} pemeriksaan gagal` : `${bucket.count} pemeriksaan berhasil`;
+      const bucketState = bucket.count === 0 ? "empty" : bucket.failedCount === 0 ? "good" : bucket.failedCount === bucket.count ? "failed" : "mixed";
+      const summary = bucketState === "empty" ? "Belum ada pemeriksaan" : bucketState === "good" ? `${bucket.count} pemeriksaan berhasil` : bucketState === "mixed" ? `Sebagian gagal: ${bucket.failedCount} dari ${bucket.count} pemeriksaan gagal` : `${bucket.count} pemeriksaan gagal`;
       const failure = bucket.latestFailure;
       const label = `${service.service.name}, ${period}: ${summary}${failure ? `. ${formatCheckResult(failure)}` : ""}`;
-      const barClass = `reference-bar ${bucket.count === 0 ? "reference-bar-empty" : bucket.failedCount ? "reference-bar-failed" : "reference-bar-good"}`;
+      const barClass = `reference-bar reference-bar-${bucketState}`;
       const trigger = bucket.count > 0
         ? <Link href={`/checks?service=${service.service.key}&from=${bucketStart.getTime()}&to=${Math.min(bucketEnd.getTime(), now.getTime())}&range=${range.key}`} className={barClass} aria-label={`${label}. Lihat semua pemeriksaan.`} />
         : <button type="button" className={barClass} aria-label={label} />;

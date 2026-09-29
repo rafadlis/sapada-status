@@ -3,6 +3,7 @@
   --reference-muted: #8a8da0;
   --reference-line: #e7e8eb;
   --reference-green: #2bc49d;
+  --reference-yellow: #f0b72f;
   --reference-red: #ee6a71;
   color: var(--reference-text);
 }
@@ -63,10 +64,11 @@
 .reference-bar { position: relative; display: block; min-width: 0; width: 100%; height: 100%; padding: 0; border: 0; cursor: pointer; }
 .reference-bar::before { content: ""; position: absolute; inset: 0; border-radius: 3px; background: var(--bar-color); }
 .reference-bar-good { --bar-color: var(--reference-green); background: var(--reference-green); }
+.reference-bar-mixed { --bar-color: var(--reference-yellow); background: var(--reference-yellow); }
 .reference-bar-failed { --bar-color: var(--reference-red); background: var(--reference-red); }
 .reference-bar-empty { --bar-color: #dfe4ea; background: #dfe4ea; }
 .reference-bar::before { background: var(--bar-color); }
-.reference-bar.reference-bar-good, .reference-bar.reference-bar-failed, .reference-bar.reference-bar-empty { background: transparent; }
+.reference-bar.reference-bar-good, .reference-bar.reference-bar-mixed, .reference-bar.reference-bar-failed, .reference-bar.reference-bar-empty { background: transparent; }
 .reference-bar:hover::before, .reference-bar:focus-visible::before { outline: 2px solid #174b86; outline-offset: 2px; }
 .reference-check-tooltip { flex-direction: column; align-items: flex-start; width: min(245px, calc(100vw - 45px)); white-space: normal; line-height: 1.45; }
 .reference-check-tooltip strong { font-weight: 700; }

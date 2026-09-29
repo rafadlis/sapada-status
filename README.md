@@ -1,8 +1,8 @@
 # Status Layanan Bapenda Garut
 
-Public status page for four Bapenda Kabupaten Garut services: SAPADA, Struk Berhadiah, Simpul PAD, and the main Bapenda website. It is deployed on Vercel with Neon Postgres. The requested public domain is `status.bapenda.garutkab.go.id`.
+Public status page for four Bapenda Kabupaten Garut services: SAPADA, Struk Berhadiah, Simpul PAD, and the main Bapenda website. It is deployed on Vercel with Neon Postgres at `https://status.bapenda.garutkab.go.id`.
 
-The page shows the latest HTTP result for each service and history ranges from 30 minutes to 90 days. The default is 30 days. Each bar represents one minute, hour, or Jakarta calendar day according to the selected range. Green bars have successful checks, red bars have at least one failed check, and gray bars have no recorded check. Hover or select a bar to see its exact period, failure count, latest error time, and reason. Its detail link lists every check in that period with exact timestamps. The displayed uptime is estimated from recorded checks, not continuous observation. Open pages refresh every minute while visible. When a service has no result for 20 minutes, its state becomes unknown.
+The page shows the latest HTTP result for each service and history ranges from 30 minutes to 90 days. The default is 30 days. Each bar represents one minute, hour, or Jakarta calendar day according to the selected range. Green bars have only successful checks, yellow bars have both successful and failed checks, red bars have only failed checks, and gray bars have no recorded check. Hover or select a bar to see its exact period, failure count, latest error time, and reason. Its detail link lists every check in that period with exact timestamps. The displayed uptime is estimated from recorded checks, not continuous observation. Open pages refresh every minute while visible. When a service has no result for 20 minutes, its state becomes unknown.
 
 ## Setup
 
@@ -23,4 +23,4 @@ On the current Vercel Hobby plan, each Cron job runs once per day with timing pr
 
 ## Domain
 
-`status.bapenda.garutkab.go.id` is attached to the Vercel project, but public DNS does not yet resolve it. The DNS administrator must add a DNS-only A record in Cloudflare: name `status.bapenda` in the `garutkab.go.id` zone, value `76.76.21.21`. This is the record currently recommended by `vercel domains inspect status.bapenda.garutkab.go.id`. After propagation, verify the domain and certificate in Vercel. Until then, the app is available at `sapada-status.vercel.app`.
+`status.bapenda.garutkab.go.id` is attached to the Vercel project and serves the status page over HTTPS. Cloudflare has a DNS-only A record named `status.bapenda` in the `garutkab.go.id` zone pointing to `76.76.21.21`. Public resolvers return that address. Vercel now recommends a project-specific CNAME, while its domain settings say the legacy A record continues to work. The app is also available at `sapada-status.vercel.app`.
