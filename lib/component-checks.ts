@@ -1,6 +1,7 @@
 import { components } from "./components";
 import { checkTimeoutMs } from "./check-result";
 import { services } from "./services";
+import { healthAuthorization, integrationHealthPath } from "./integration-signature";
 
 type ComponentResult = {
   key: (typeof components)[number]["key"];
@@ -26,10 +27,10 @@ export async function runComponentChecks() {
   const token = process.env.INTEGRATION_HEALTH_TOKEN;
   if (!token) return [];
 
-  const url = new URL("/api/internal/integration-health", services[0].url);
+  const url = new URL(integrationHealthPath, services[0].url);
   try {
     const response = await fetch(url, {
-      headers: { authorization: `Bearer ${token}` },
+      headers: { authorization: healthAuthorization(token) },
       cache: "no-store",
       signal: AbortSignal.timeout(checkTimeoutMs),
     });
