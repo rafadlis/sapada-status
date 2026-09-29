@@ -3,6 +3,7 @@ import { getDb } from "./db";
 import { checks, incidents, incidentUpdates } from "./db/schema";
 import { defaultHistoryRange, getHistoryRange, getHistoryWindow } from "./history-range";
 import { services } from "./services";
+import { components } from "./components";
 
 export type PublicStatus = "operational" | "degraded" | "unknown";
 type Check = typeof checks.$inferSelect;
@@ -11,7 +12,7 @@ type HistoryRange = ReturnType<typeof getHistoryRange>;
 
 export type ServiceHistoryBucket = { count: number; failedCount: number; latestFailure: Check | null };
 export type ServiceStatus = {
-  service: (typeof services)[number];
+  service: (typeof services)[number] | (typeof components)[number];
   state: PublicStatus;
   latest: Check | null;
   history: ServiceHistoryBucket[];
@@ -21,12 +22,15 @@ export type ServiceStatus = {
 export type StatusData = {
   state: PublicStatus;
   services: ServiceStatus[];
+  components: ServiceStatus[];
   incidents: PublicIncident[];
   dataError: boolean;
 };
 
-function emptyServices(bucketCount: number): ServiceStatus[] {
-  return services.map((service) => ({
+const monitors = [...services, ...components] as const;
+
+function emptyMonitors(bucketCount: number): ServiceStatus[] {
+  return monitors.map((service) => ({
     service,
     state: "unknown",
     latest: null,
@@ -37,7 +41,8 @@ function emptyServices(bucketCount: number): ServiceStatus[] {
 
 export async function getStatusData(range: HistoryRange | null = defaultHistoryRange, now = new Date()): Promise<StatusData> {
   if (!process.env.DATABASE_URL) {
-    return { state: "unknown", services: emptyServices(range?.buckets ?? 0), incidents: [], dataError: false };
+    const empty = emptyMonitors(range?.buckets ?? 0);
+    return { state: "unknown", services: empty.slice(0, services.length), components: empty.slice(services.length), incidents: [], dataError: false };
   }
 
   try {
@@ -47,7 +52,7 @@ export async function getStatusData(range: HistoryRange | null = defaultHistoryR
     const bucketMs = window?.bucketMs ?? 0;
     const bucketIndex = sql<number>`floor((extract(epoch from ${checks.checkedAt}) * 1000 - ${since.getTime()}) / ${bucketMs || 1})::integer`;
     const [latestRows, aggregateRows, recentIncidents] = await Promise.all([
-      Promise.all(services.map((service) => db.select().from(checks)
+      Promise.all(monitors.map((service) => db.select().from(checks)
         .where(eq(checks.serviceKey, service.key)).orderBy(desc(checks.checkedAt), desc(checks.id)).limit(1))),
       range ? db.select({
         serviceKey: checks.serviceKey,
@@ -69,7 +74,7 @@ export async function getStatusData(range: HistoryRange | null = defaultHistoryR
         .orderBy(desc(incidentUpdates.createdAt), desc(incidentUpdates.id)) : Promise.resolve([] as (typeof incidentUpdates.$inferSelect)[]),
     ]);
     const failureById = new Map(failures.map((failure) => [failure.id, failure]));
-    const serviceStatuses = services.map((service, index): ServiceStatus => {
+    const monitorStatuses = monitors.map((service, index): ServiceStatus => {
       const latest = latestRows[index][0] ?? null;
       const history: ServiceHistoryBucket[] = Array.from({ length: range?.buckets ?? 0 }, () => ({ count: 0, failedCount: 0, latestFailure: null }));
       for (const row of aggregateRows) {
@@ -84,15 +89,16 @@ export async function getStatusData(range: HistoryRange | null = defaultHistoryR
       const uptime = total ? Math.round(((total - failed) / total) * 10000) / 100 : null;
       return { service, state, latest, history, uptime };
     });
-    const state: PublicStatus = serviceStatuses.some((service) => service.state === "degraded") ? "degraded"
-      : serviceStatuses.some((service) => service.state === "unknown") ? "unknown" : "operational";
-    return { state, services: serviceStatuses, incidents: recentIncidents.map((incident) => ({
+    const state: PublicStatus = monitorStatuses.some((service) => service.state === "degraded") ? "degraded"
+      : monitorStatuses.some((service) => service.state === "unknown") ? "unknown" : "operational";
+    return { state, services: monitorStatuses.slice(0, services.length), components: monitorStatuses.slice(services.length), incidents: recentIncidents.map((incident) => ({
       ...incident,
       updates: updates.filter((update) => update.incidentId === incident.id),
     })), dataError: false };
   } catch (error) {
     console.error("Failed to load status data", error);
-    return { state: "unknown", services: emptyServices(range?.buckets ?? 0), incidents: [], dataError: true };
+    const empty = emptyMonitors(range?.buckets ?? 0);
+    return { state: "unknown", services: empty.slice(0, services.length), components: empty.slice(services.length), incidents: [], dataError: true };
   }
 }
 
