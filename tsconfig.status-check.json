@@ -14,6 +14,7 @@
     "app/api/admin/incidents/[id]/route.ts",
     "lib/auth.ts",
     "lib/status.ts",
+    "lib/component-checks.test.ts",
     "lib/history-range.ts",
     "components/site-header.tsx",
     "lib/db/index.ts",

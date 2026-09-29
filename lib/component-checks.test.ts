@@ -1,4 +1,5 @@
-import { describe, expect, test } from "bun:test";
+import { describe, test } from "node:test";
+import assert from "node:assert/strict";
 import { parseComponentResults } from "./component-checks";
 
 const results = [
@@ -10,13 +11,13 @@ const results = [
 
 describe("integration result contract", () => {
   test("accepts a complete set regardless of order", () => {
-    expect(parseComponentResults({ results: [...results].reverse() })).toEqual(results);
+    assert.deepEqual(parseComponentResults({ results: [...results].reverse() }), results);
   });
 
   test("rejects missing, duplicate, and malformed results", () => {
-    expect(parseComponentResults({ results: results.slice(1) })).toBeNull();
-    expect(parseComponentResults({ results: [results[0], results[0], ...results.slice(2)] })).toBeNull();
-    expect(parseComponentResults({ results: [{ ...results[0], ok: "true" }, ...results.slice(1)] })).toBeNull();
-    expect(parseComponentResults({ results: [{ ...results[0], latencyMs: -1 }, ...results.slice(1)] })).toBeNull();
+    assert.equal(parseComponentResults({ results: results.slice(1) }), null);
+    assert.equal(parseComponentResults({ results: [results[0], results[0], ...results.slice(2)] }), null);
+    assert.equal(parseComponentResults({ results: [{ ...results[0], ok: "true" }, ...results.slice(1)] }), null);
+    assert.equal(parseComponentResults({ results: [{ ...results[0], latencyMs: -1 }, ...results.slice(1)] }), null);
   });
 });
