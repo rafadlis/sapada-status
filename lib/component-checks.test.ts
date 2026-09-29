@@ -12,6 +12,7 @@ const results = [
 describe("integration result contract", () => {
   test("accepts a complete set regardless of order", () => {
     assert.deepEqual(parseComponentResults({ results: [...results].reverse() }), results);
+    assert.deepEqual(parseComponentResults({ results: [...results.slice(0, 3), { ...results[3], ok: null }] })?.[3]?.ok, null);
   });
 
   test("rejects missing, duplicate, and malformed results", () => {

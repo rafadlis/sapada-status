@@ -4,7 +4,7 @@ import { services } from "./services";
 
 type ComponentResult = {
   key: (typeof components)[number]["key"];
-  ok: boolean;
+  ok: boolean | null;
   latencyMs: number | null;
 };
 
@@ -15,7 +15,7 @@ export function parseComponentResults(value: unknown): ComponentResult[] | null 
   for (const row of value.results) {
     if (!row || typeof row !== "object" || !("key" in row) || !("ok" in row) || !("latencyMs" in row)) return null;
     const component = components.find((entry) => entry.key === row.key);
-    if (!component || results.has(component.key) || typeof row.ok !== "boolean") return null;
+    if (!component || results.has(component.key) || (row.ok !== null && typeof row.ok !== "boolean")) return null;
     if (row.latencyMs !== null && (typeof row.latencyMs !== "number" || !Number.isInteger(row.latencyMs) || row.latencyMs < 0 || row.latencyMs > 60_000)) return null;
     results.set(component.key, { key: component.key, ok: row.ok, latencyMs: row.latencyMs as number | null });
   }
@@ -36,7 +36,8 @@ export async function runComponentChecks() {
     if (!response.ok) throw new Error("Probe unavailable");
     const results = parseComponentResults(await response.json());
     if (!results) throw new Error("Invalid probe response");
-    return results.map((result) => ({
+    const available = results.filter((result): result is ComponentResult & { ok: boolean } => result.ok !== null);
+    return available.map((result) => ({
       serviceKey: result.key,
       ok: result.ok,
       statusCode: null,
