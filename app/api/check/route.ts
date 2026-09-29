@@ -2,6 +2,7 @@ import { getDb } from "@/lib/db";
 import { checks } from "@/lib/db/schema";
 import { checkTimeoutMs } from "@/lib/check-result";
 import { services } from "@/lib/services";
+import { runComponentChecks } from "@/lib/component-checks";
 
 function authorized(request: Request, secret: string | undefined) {
   return Boolean(secret && request.headers.get("authorization") === `Bearer ${secret}`);
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
 }
 
 async function runCheck() {
-  const results = await Promise.all(services.map(async (service) => {
+  const [serviceResults, componentResults] = await Promise.all([Promise.all(services.map(async (service) => {
     const started = performance.now();
     let ok = false;
     let statusCode: number | null = null;
@@ -41,7 +42,8 @@ async function runCheck() {
       error = cause instanceof Error ? cause.message.slice(0, 300) : "Unknown network error";
     }
     return { serviceKey: service.key, ok, statusCode, latencyMs: Math.round(performance.now() - started), error };
-  }));
+  })), runComponentChecks()]);
+  const results = [...serviceResults, ...componentResults];
   try {
     await getDb().insert(checks).values(results);
   } catch (cause) {

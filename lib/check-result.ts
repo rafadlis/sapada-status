@@ -1,4 +1,5 @@
 import { getService } from "@/lib/services";
+import { getComponent } from "@/lib/components";
 
 export const checkTimeoutMs = 10_000;
 
@@ -15,6 +16,12 @@ function timedOut(check: CheckResult) {
 }
 
 export function formatCheckResult(check: CheckResult) {
+  const component = getComponent(check.serviceKey);
+  if (component) {
+    if (check.ok) return `Koneksi tersedia${check.latencyMs === null ? "" : ` · ${check.latencyMs.toLocaleString("id-ID")} ms`}`;
+    if (timedOut(check)) return `Pemeriksaan ${component.name} melewati batas waktu.`;
+    return `Koneksi ${component.name} sedang terganggu.`;
+  }
   const name = getService(check.serviceKey)?.name ?? "Layanan";
   if (check.ok) {
     return `HTTP ${check.statusCode ?? "berhasil"}${check.latencyMs === null ? "" : ` · ${check.latencyMs.toLocaleString("id-ID")} ms`}`;

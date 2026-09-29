@@ -11,6 +11,7 @@ import { checks } from "@/lib/db/schema";
 import { defaultHistoryRange, getHistoryRange } from "@/lib/history-range";
 import { formatJakarta } from "@/lib/status";
 import { getService, services } from "@/lib/services";
+import { getComponent } from "@/lib/components";
 
 export const metadata: Metadata = {
   title: "Detail pemeriksaan | Status Bapenda Garut",
@@ -38,7 +39,7 @@ async function ChecksContent({ searchParams }: ChecksProps) {
   const params = await searchParams;
   const range = getHistoryRange(params.range);
   const requestedService = single(params.service);
-  const service = requestedService === undefined ? services[0] : getService(requestedService);
+  const service = requestedService === undefined ? services[0] : getService(requestedService) ?? getComponent(requestedService);
   const from = Number(single(params.from));
   const to = Number(single(params.to));
   const requestedPage = Number(single(params.page) ?? "1");
