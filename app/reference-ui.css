@@ -50,10 +50,15 @@
 .reference-service { padding: 17px 16px 18px; }
 .reference-service + .reference-service { border-top: 1px solid var(--reference-line); }
 .reference-service-group + .reference-service-group > .reference-service { border-top: 1px solid var(--reference-line); }
-.reference-components { margin: 0 16px 12px 38px; border-left: 2px solid #e7e8eb; }
-.reference-components h3 { margin: 0; padding: 11px 0 5px 15px; color: #788293; font-size: 11px; font-weight: 700; }
-.reference-components .reference-service { padding: 12px 0 14px 15px; }
-.reference-components .reference-service + .reference-service { border-top: 1px solid var(--reference-line); }
+.reference-components { margin: 0; }
+.reference-components .reference-service { padding: 12px 16px 14px; }
+.reference-components .reference-service + .reference-service { border-top: 0; }
+.reference-components-toggle { display: inline-flex; align-items: center; gap: 3px; flex: none; padding: 2px 3px; border: 0; background: transparent; color: #68788e; font-size: 12px; line-height: 1.2; white-space: nowrap; }
+button.reference-components-toggle { cursor: pointer; }
+button.reference-components-toggle:hover { color: #174b86; }
+button.reference-components-toggle:focus-visible { outline: 2px solid #174b86; outline-offset: 2px; }
+.reference-components-toggle svg { width: 13px; height: 13px; }
+.reference-components-toggle[aria-expanded="true"] svg { transform: rotate(90deg); }
 .reference-service-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 14px; }
 .reference-service-head > div { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .reference-service-head strong { font-weight: 650; }
