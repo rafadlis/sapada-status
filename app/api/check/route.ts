@@ -3,6 +3,7 @@ import { checks } from "@/lib/db/schema";
 import { checkTimeoutMs } from "@/lib/check-result";
 import { services } from "@/lib/services";
 import { runComponentChecks } from "@/lib/component-checks";
+import { processWhatsappAlerts } from "@/lib/whatsapp-alerts";
 
 function authorized(request: Request, secret: string | undefined) {
   return Boolean(secret && request.headers.get("authorization") === `Bearer ${secret}`);
@@ -50,5 +51,11 @@ async function runCheck() {
     console.error("Failed to save health check", cause);
     return Response.json({ error: "Failed to save health check" }, { status: 500 });
   }
-  return Response.json({ results }, { headers: { "cache-control": "no-store" } });
+  try {
+    const alerts = await processWhatsappAlerts(results);
+    return Response.json({ results, alerts }, { headers: { "cache-control": "no-store" } });
+  } catch (cause) {
+    console.error("Failed to process WhatsApp alerts", cause);
+    return Response.json({ error: "Health checks saved, but WhatsApp alerts could not be processed" }, { status: 503 });
+  }
 }

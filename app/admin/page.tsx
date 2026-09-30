@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
 import Link from "next/link";
+import { desc } from "drizzle-orm";
 import { AdminIncidentDialog } from "@/components/admin-incident-dialog";
 import { AdminIncidentTarget } from "@/components/admin-incident-target";
 import { AdminSelect } from "@/components/admin-select";
@@ -9,10 +10,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { SiteHeader } from "@/components/site-header";
 import { PageLoading } from "@/components/page-loading";
 import { isAdmin } from "@/lib/auth";
+import { getDb } from "@/lib/db";
+import { whatsappAlertDeliveries } from "@/lib/db/schema";
 import { formatJakarta, getStatusData } from "@/lib/status";
 import { kindLabel, stateLabel } from "@/lib/incident";
 import { affectedComponentNames } from "@/lib/incident-components";
 import { incidentServiceLabel } from "@/lib/incident-service";
+import { alertFailureName, whatsappAlertConfigured } from "@/lib/whatsapp-alerts";
 
 type AdminProps = { searchParams: Promise<{ error?: string; created?: string; updated?: string }> };
 
@@ -26,7 +30,12 @@ async function AdminContent({ searchParams }: AdminProps) {
   await connection();
   const params = await searchParams;
   const authorized = await isAdmin();
-  const data = authorized ? await getStatusData(null) : null;
+  const [data, alertDeliveries] = authorized
+    ? await Promise.all([
+      getStatusData(null),
+      getDb().select().from(whatsappAlertDeliveries).orderBy(desc(whatsappAlertDeliveries.createdAt)).limit(20),
+    ])
+    : [null, []];
   return <main className="site-width subpage-main admin-main">
     <span className="eyebrow">PENGELOLA BAPENDA</span><h1>{authorized ? "Kelola pembaruan" : "Masuk sebagai pengelola"}</h1>
     {params.error === "login" && !authorized && <p className="form-feedback form-error" role="alert">Kata sandi tidak sesuai. Coba lagi.</p>}
@@ -68,6 +77,20 @@ async function AdminContent({ searchParams }: AdminProps) {
             <TableCell><div className="admin-row-actions"><Link href={`/incidents/${incident.id}`} aria-label={`Lihat ${incident.title} di halaman publik`}>Lihat publik</Link><AdminIncidentDialog id={incident.id} title={incident.title} kind={incident.kind} state={incident.state} serviceKey={incident.serviceKey} affectedComponentKeys={incident.affectedComponentKeys} /></div></TableCell>
           </TableRow>)}</TableBody>
         </Table> : <p className="admin-empty">Belum ada informasi yang diterbitkan.</p>}</CardContent>
+      </Card></section>
+      <section className="admin-section"><Card className="admin-panel">
+        <CardHeader className="border-b"><CardTitle><h2>Peringatan WhatsApp</h2></CardTitle>
+          <CardDescription>{whatsappAlertConfigured() ? "Aktif · pesan dikirim saat gangguan baru terdeteksi" : "Belum aktif · lengkapi konfigurasi OCA dan penerima"}</CardDescription>
+        </CardHeader>
+        <CardContent className="admin-table-content">{alertDeliveries.length ? <Table aria-label="Riwayat pengiriman peringatan" className="admin-incident-table">
+          <TableHeader><TableRow><TableHead>Waktu</TableHead><TableHead>Penerima</TableHead><TableHead>Gangguan</TableHead><TableHead>Pengiriman</TableHead></TableRow></TableHeader>
+          <TableBody>{alertDeliveries.map((delivery) => <TableRow key={delivery.id}>
+            <TableCell className="admin-table-date">{formatJakarta(delivery.createdAt, { dateStyle: "medium", timeStyle: "short" })} WIB</TableCell>
+            <TableCell>••••{delivery.phone.slice(-4)}</TableCell>
+            <TableCell>{delivery.failures.map((failure) => alertFailureName(failure.serviceKey)).join(", ")}</TableCell>
+            <TableCell><span className="admin-stage">{{ pending: "Menunggu", sending: "Memproses", accepted: "Diterima OCA", retry: "Mencoba lagi", failed: "Gagal", needs_review: "Perlu ditinjau" }[delivery.status] ?? delivery.status}</span>{delivery.lastError && <span className="admin-alert-error">{delivery.lastError}</span>}</TableCell>
+          </TableRow>)}</TableBody>
+        </Table> : <p className="admin-empty">Belum ada peringatan yang dikirim.</p>}</CardContent>
       </Card></section>
       <form action="/api/admin/logout" method="post"><button className="button-text" type="submit">Keluar dari pengelola</button></form>
     </>}

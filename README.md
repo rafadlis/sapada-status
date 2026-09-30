@@ -17,6 +17,26 @@ The page shows the latest status for each service and history ranges from 30 min
 
 The GitHub Actions workflow calls `POST /api/check` on a five-minute schedule. Configure `MONITOR_TOKEN` as both a GitHub Actions repository secret and a Vercel environment variable, and set the `STATUS_URL` repository variable to the Vercel production URL. Vercel Cron calls `GET /api/check` through 96 daily jobs as a backup; set `CRON_SECRET` in Vercel production environment variables. A request checks all four public services and the SAPADA integrations concurrently, records each result in Neon, and returns the results as JSON. The workflow can also be triggered manually.
 
+### WhatsApp failure alerts
+
+The monitor can notify a comma-separated list of WhatsApp numbers through OCA when a service or component changes from healthy to failed. An alert lists the newly failing checks, the Jakarta time, and their HTTP status or an unreachable reason. Repeated failed checks do not send repeated alerts. A later healthy check rearms the alert for the next failure. The database stores each recipient's delivery result; `/admin` shows the latest results with masked numbers. OCA rate limits are retried on later checks, while a network timeout or uncertain OCA response is flagged for manual review instead of risking a duplicate message.
+
+The Indonesian Utility template `peringatan_gangguan_layanan_bapenda` was submitted to OCA on 30 September 2026 and is awaiting approval. Its body is:
+
+```text
+Peringatan gangguan layanan Bapenda Garut.
+
+Layanan/komponen: {{1}}
+Waktu: {{2}} WIB
+Hasil pemeriksaan: {{3}}
+
+Mohon segera periksa layanan, telusuri penyebab gangguan, dan lakukan penanganan. Pantau status di https://status.bapenda.garutkab.go.id/.
+
+Pesan ini dikirim otomatis oleh sistem.
+```
+
+After OCA approves it, apply the database migration and set `WHATSAPP_BIZ_OCA_ENDPOINT`, `WHATSAPP_BIZ_OCA_TOKEN`, `WHATSAPP_BIZ_OCA_TEMPLATE_CODE_STATUS_ALERT` (the exact approved code shown in OCA, likely with a `utility:` prefix), and `WHATSAPP_ALERT_RECIPIENTS` in Vercel production. Enter numbers in international format, such as `6281234567890`, separated by commas. Keep the token and real recipient numbers out of Git. All four settings are required; alerts stay off while any are missing. The first configured check treats any currently failed service or component as a new failure. Review the admin delivery table after the first live alert.
+
 The SAPADA section has five components: its public website, TTE, Storage, Payment API, and ATR BPN API. The parent row reports their combined status. It is degraded if any component fails, unknown if a component has no recent result and none fails, and operational only if all five are healthy. Its history and uptime count complete monitoring runs, with success requiring all five checks to pass. Older website-only runs do not count toward the overall history. The status app calls SAPADA's protected, read only `/api/internal/integration-health` route because the VPN endpoints cannot be reached from Vercel. Set `INTEGRATION_HEALTH_TOKEN` to a random 64-character hexadecimal signing seed in Vercel production. Sapada verifies short lived Ed25519 signatures with a public key in its code; no signing secret is needed on the SAPADA server. Without the seed, integration components remain unknown and no integration checks are recorded. A failed or malformed probe response records failures for all four integration components. Payment API is healthy only when all four payment VPN routes accept a TCP connection. This proves network reachability, not that a payment transaction succeeds. SAPADA checks its inbound ATR BPN API with an unauthenticated POST and expects the route's Basic Auth challenge. This confirms route and auth guard reachability without sending credentials or taxpayer data; it does not prove that a business lookup succeeds. No provider URL or credential appears on the public status page.
 
 Open `/admin` and sign in with `ADMIN_PASSWORD` to publish a disruption or planned maintenance for one service or all services in a single update. The page uses `SESSION_SECRET` to sign its session cookie. Every stage change requires a public note and creates a dated update. The homepage highlights active updates, `/history` lists earlier events, `/incidents/:id` shows each timeline and affected services, and `/rss.xml` publishes official updates. The migration assigns existing SAPADA checks and updates to the SAPADA service.

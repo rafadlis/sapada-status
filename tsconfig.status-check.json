@@ -17,6 +17,8 @@
     "lib/status-rollup.test.ts",
     "lib/component-checks.test.ts",
     "lib/incident-components.test.ts",
+    "lib/whatsapp-alerts.ts",
+    "lib/whatsapp-alerts.test.ts",
     "app/incidents/[id]/page.tsx",
     "lib/history-range.ts",
     "components/site-header.tsx",
