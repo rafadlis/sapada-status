@@ -36,6 +36,9 @@ export const monitorAlertStates = pgTable("monitor_alert_states", {
   ok: boolean("ok").notNull(),
   checkedAt: timestamp("checked_at", { withTimezone: true }).notNull(),
   newFailure: boolean("new_failure").notNull().default(false),
+  failedSince: timestamp("failed_since", { withTimezone: true }),
+  healthySince: timestamp("healthy_since", { withTimezone: true }),
+  alerted: boolean("alerted").notNull().default(false),
 });
 
 export const whatsappAlertRecipients = pgTable("whatsapp_alert_recipients", {
@@ -57,4 +60,7 @@ export const whatsappAlertDeliveries = pgTable("whatsapp_alert_deliveries", {
   providerMessageId: text("provider_message_id"),
   lastError: text("last_error"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [index("whatsapp_alert_deliveries_pending_idx").on(table.status, table.nextAttemptAt)]);
+}, (table) => [
+  index("whatsapp_alert_deliveries_pending_idx").on(table.status, table.nextAttemptAt),
+  index("whatsapp_alert_deliveries_phone_claimed_idx").on(table.phone, table.claimedAt),
+]);

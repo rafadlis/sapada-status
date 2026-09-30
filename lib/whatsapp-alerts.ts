@@ -5,6 +5,13 @@ import { components } from "@/lib/components";
 import { services } from "@/lib/services";
 
 export type AlertFailure = { serviceKey: string; statusCode: number | null };
+export const whatsappAlertPolicy = {
+  confirmationMinutes: 5,
+  cooldownMinutes: 30,
+  dailyLimit: 6,
+  expiryMinutes: 60,
+  freshnessMinutes: 20,
+} as const;
 type CheckResult = AlertFailure & { ok: boolean };
 type ClaimedDelivery = {
   id: number;
@@ -113,13 +120,29 @@ export async function sendOcaAlert(
 
 export function buildAlertTransitionQuery(results: CheckResult[], recipients: string[], checkedAt: Date) {
   const values = sql.join(results.map((result) => sql`(${result.serviceKey}::text, ${result.ok}::boolean, ${result.statusCode}::integer)`), sql`, `);
+  const confirmedFailure = sql`NOT EXCLUDED.ok AND NOT monitor_alert_states.alerted
+    AND monitor_alert_states.failed_since <= EXCLUDED.checked_at - make_interval(mins => ${whatsappAlertPolicy.confirmationMinutes})
+    AND monitor_alert_states.checked_at >= EXCLUDED.checked_at - make_interval(mins => ${whatsappAlertPolicy.freshnessMinutes})`;
   return sql`WITH input(service_key, ok, status_code) AS (VALUES ${values}),
     changed AS (
-      INSERT INTO monitor_alert_states (service_key, ok, checked_at, new_failure)
-      SELECT service_key, ok, ${checkedAt}, NOT ok FROM input WHERE true
+      INSERT INTO monitor_alert_states (service_key, ok, checked_at, new_failure, failed_since, healthy_since)
+      SELECT service_key, ok, ${checkedAt}::timestamptz, false,
+        CASE WHEN NOT ok THEN ${checkedAt}::timestamptz END,
+        CASE WHEN ok THEN ${checkedAt}::timestamptz END FROM input WHERE true
       ON CONFLICT (service_key) DO UPDATE
       SET ok = EXCLUDED.ok, checked_at = EXCLUDED.checked_at,
-        new_failure = monitor_alert_states.ok AND NOT EXCLUDED.ok
+        failed_since = CASE WHEN EXCLUDED.ok THEN NULL
+          WHEN monitor_alert_states.checked_at < EXCLUDED.checked_at - make_interval(mins => ${whatsappAlertPolicy.freshnessMinutes}) THEN EXCLUDED.checked_at
+          ELSE COALESCE(monitor_alert_states.failed_since, EXCLUDED.checked_at) END,
+        healthy_since = CASE WHEN NOT EXCLUDED.ok THEN NULL
+          WHEN monitor_alert_states.checked_at < EXCLUDED.checked_at - make_interval(mins => ${whatsappAlertPolicy.freshnessMinutes}) THEN EXCLUDED.checked_at
+          ELSE COALESCE(monitor_alert_states.healthy_since, EXCLUDED.checked_at) END,
+        new_failure = COALESCE(${confirmedFailure}, false),
+        alerted = CASE WHEN ${confirmedFailure} THEN true
+          WHEN EXCLUDED.ok
+            AND monitor_alert_states.healthy_since <= EXCLUDED.checked_at - make_interval(mins => ${whatsappAlertPolicy.confirmationMinutes})
+            AND monitor_alert_states.checked_at >= EXCLUDED.checked_at - make_interval(mins => ${whatsappAlertPolicy.freshnessMinutes}) THEN false
+          ELSE monitor_alert_states.alerted END
       WHERE monitor_alert_states.checked_at < EXCLUDED.checked_at
       RETURNING service_key, new_failure
     ),
@@ -139,16 +162,72 @@ async function recordAlertTransitions(results: CheckResult[], recipients: string
   await getDb().execute(buildAlertTransitionQuery(results, recipients, checkedAt));
 }
 
+export function buildAlertClaimQuery(at: Date) {
+  return sql<ClaimedDelivery>`WITH recipients AS (
+    SELECT recipient.phone FROM whatsapp_alert_recipients AS recipient
+    WHERE recipient.enabled AND EXISTS (
+      SELECT 1 FROM whatsapp_alert_deliveries AS delivery
+      WHERE delivery.phone = recipient.phone AND delivery.status = 'pending' AND delivery.next_attempt_at <= ${at}::timestamptz
+        AND delivery.created_at >= ${at}::timestamptz - make_interval(mins => ${whatsappAlertPolicy.expiryMinutes})
+        AND EXISTS (SELECT 1 FROM jsonb_array_elements(delivery.failures) AS failure
+          JOIN monitor_alert_states AS state ON state.service_key = failure->>'serviceKey'
+          WHERE NOT state.ok AND state.alerted
+            AND state.checked_at >= ${at}::timestamptz - make_interval(mins => ${whatsappAlertPolicy.freshnessMinutes}))
+    ) AND NOT EXISTS (
+      SELECT 1 FROM whatsapp_alert_deliveries AS recent
+      WHERE recent.phone = recipient.phone AND recent.claimed_at > ${at}::timestamptz - make_interval(mins => ${whatsappAlertPolicy.cooldownMinutes})
+    ) AND (
+      SELECT COALESCE(sum(attempts), 0) FROM whatsapp_alert_deliveries AS recent
+      WHERE recent.phone = recipient.phone AND recent.claimed_at > ${at}::timestamptz - interval '24 hours'
+    ) < ${whatsappAlertPolicy.dailyLimit}
+    ORDER BY recipient.id LIMIT 4 FOR UPDATE OF recipient SKIP LOCKED
+  ), locked AS (
+    SELECT delivery.* FROM whatsapp_alert_deliveries AS delivery JOIN recipients USING (phone)
+    WHERE delivery.status = 'pending' AND delivery.next_attempt_at <= ${at}::timestamptz
+      AND delivery.created_at >= ${at}::timestamptz - make_interval(mins => ${whatsappAlertPolicy.expiryMinutes})
+    FOR UPDATE OF delivery SKIP LOCKED
+  ), live_failures AS (
+    SELECT DISTINCT ON (locked.phone, failure->>'serviceKey') locked.phone, failure
+    FROM locked CROSS JOIN jsonb_array_elements(locked.failures) AS failure
+    JOIN monitor_alert_states AS state ON state.service_key = failure->>'serviceKey'
+    WHERE NOT state.ok AND state.alerted
+      AND state.checked_at >= ${at}::timestamptz - make_interval(mins => ${whatsappAlertPolicy.freshnessMinutes})
+    ORDER BY locked.phone, failure->>'serviceKey', locked.id DESC
+  ), grouped AS (
+    SELECT phone, jsonb_agg(failure ORDER BY failure->>'serviceKey') AS failures,
+      (SELECT min(id) FROM locked WHERE locked.phone = live_failures.phone) AS first_id
+    FROM live_failures GROUP BY phone
+  ), updated AS (
+    UPDATE whatsapp_alert_deliveries AS delivery SET
+      status = CASE WHEN delivery.id = grouped.first_id THEN 'sending' ELSE 'cancelled' END,
+      failures = CASE WHEN delivery.id = grouped.first_id THEN grouped.failures ELSE delivery.failures END,
+      attempts = delivery.attempts + CASE WHEN delivery.id = grouped.first_id THEN 1 ELSE 0 END,
+      claimed_at = CASE WHEN delivery.id = grouped.first_id THEN ${at}::timestamptz ELSE delivery.claimed_at END,
+      last_error = CASE WHEN delivery.id = grouped.first_id THEN NULL ELSE 'Combined into another alert' END
+    FROM grouped WHERE delivery.phone = grouped.phone AND delivery.id IN (SELECT id FROM locked)
+    RETURNING delivery.id, delivery.phone, delivery.failures, delivery.created_at, delivery.attempts, delivery.status
+  ) SELECT id, phone, failures, created_at, attempts FROM updated WHERE status = 'sending'`;
+}
+
+export function buildAlertMaintenanceQuery(at: Date) {
+  return sql`WITH interrupted AS (
+    UPDATE whatsapp_alert_deliveries SET status = 'needs_review', last_error = 'Send interrupted; acceptance uncertain'
+    WHERE status = 'sending' AND claimed_at < ${at}::timestamptz - interval '10 minutes' RETURNING id
+  ), expired AS (
+    UPDATE whatsapp_alert_deliveries AS delivery SET status = 'cancelled', last_error = 'Alert expired or checks recovered'
+    WHERE delivery.status = 'pending' AND (
+      delivery.created_at < ${at}::timestamptz - make_interval(mins => ${whatsappAlertPolicy.expiryMinutes})
+      OR NOT EXISTS (SELECT 1 FROM jsonb_array_elements(delivery.failures) AS failure
+        JOIN monitor_alert_states AS state ON state.service_key = failure->>'serviceKey'
+        WHERE NOT state.ok AND state.alerted AND state.checked_at >= ${at}::timestamptz - make_interval(mins => ${whatsappAlertPolicy.freshnessMinutes}))
+    ) RETURNING id
+  ) SELECT (SELECT count(*) FROM interrupted) AS interrupted, (SELECT count(*) FROM expired) AS expired`;
+}
+
 async function dispatchPendingAlerts(config: { endpoint: string; token: string; templateCode: string }) {
-  const claimed = await getDb().execute(sql<ClaimedDelivery>`UPDATE whatsapp_alert_deliveries
-    SET status = 'sending', attempts = attempts + 1, claimed_at = now()
-    WHERE id IN (
-      SELECT delivery.id FROM whatsapp_alert_deliveries AS delivery
-      JOIN whatsapp_alert_recipients AS recipient ON recipient.phone = delivery.phone AND recipient.enabled
-      WHERE delivery.status = 'pending' AND delivery.next_attempt_at <= now()
-      ORDER BY delivery.id LIMIT 4 FOR UPDATE OF delivery SKIP LOCKED
-    )
-    RETURNING id, phone, failures, created_at, attempts`);
+  // Unknown send outcomes are never automatically retried, including interrupted invocations.
+  await getDb().execute(buildAlertMaintenanceQuery(new Date()));
+  const claimed = await getDb().execute(buildAlertClaimQuery(new Date()));
   const deliveries = claimed.rows as ClaimedDelivery[];
   await Promise.all(deliveries.map(async (delivery) => {
     const result = await sendOcaAlert({

@@ -19,7 +19,7 @@ import { formatJakarta, getStatusData } from "@/lib/status";
 import { kindLabel, stateLabel } from "@/lib/incident";
 import { affectedComponentNames } from "@/lib/incident-components";
 import { incidentServiceLabel } from "@/lib/incident-service";
-import { alertFailureName, whatsappAlertConfigured } from "@/lib/whatsapp-alerts";
+import { alertFailureName, whatsappAlertConfigured, whatsappAlertPolicy } from "@/lib/whatsapp-alerts";
 
 export const metadata: Metadata = {
   title: "Pengelola",
@@ -115,6 +115,7 @@ async function AdminContent({ searchParams }: AdminProps) {
       <section className="admin-section"><Card className="admin-panel">
         <CardHeader className="border-b"><CardTitle><h2>Peringatan WhatsApp</h2></CardTitle>
           <CardDescription>{whatsappAlertConfigured() && recipients.some((recipient) => recipient.enabled) ? "Aktif · pesan dikirim saat gangguan baru terdeteksi" : "Belum aktif · lengkapi konfigurasi OCA dan penerima"}</CardDescription>
+          <CardDescription>Gangguan dan pemulihan dikonfirmasi selama {whatsappAlertPolicy.confirmationMinutes} menit. Maksimal satu pengiriman per {whatsappAlertPolicy.cooldownMinutes} menit dan {whatsappAlertPolicy.dailyLimit} per 24 jam untuk tiap penerima. Gangguan yang menunggu digabung; pesan kedaluwarsa setelah {whatsappAlertPolicy.expiryMinutes} menit.</CardDescription>
         </CardHeader>
         <CardContent className="admin-table-content">{alertDeliveries.length ? <Table aria-label="Riwayat pengiriman peringatan" className="admin-incident-table">
           <TableHeader><TableRow><TableHead>Waktu</TableHead><TableHead>Penerima</TableHead><TableHead>Gangguan</TableHead><TableHead>Pengiriman</TableHead></TableRow></TableHeader>
