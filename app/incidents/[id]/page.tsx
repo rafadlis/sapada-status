@@ -9,6 +9,7 @@ import { PageLoading } from "@/components/page-loading";
 import { getDb } from "@/lib/db";
 import { incidents, incidentUpdates } from "@/lib/db/schema";
 import { kindLabel, stateLabel } from "@/lib/incident";
+import { affectedComponentNames } from "@/lib/incident-components";
 import { getIncidentServices } from "@/lib/incident-service";
 import { formatJakarta } from "@/lib/status";
 
@@ -55,6 +56,7 @@ async function IncidentContent({ params }: IncidentProps) {
   const latest = updates[0];
   const latestAt = latest?.createdAt ?? incident.updatedAt;
   const affectedServices = getIncidentServices(incident.serviceKey);
+  const affectedComponents = affectedComponentNames(incident.affectedComponentKeys);
   const resolved = incident.state === "resolved";
   const maintenance = incident.kind === "maintenance";
   const affectedAt = maintenance
@@ -83,6 +85,7 @@ async function IncidentContent({ params }: IncidentProps) {
       {incident.state !== "scheduled" && <div className="incident-affected-range"><time dateTime={affectedAt.toISOString()}>{formatJakarta(affectedAt, { dateStyle: "medium", timeStyle: "short" })} WIB</time><time dateTime={activityEnd.toISOString()}>{resolved ? `${formatJakarta(activityEnd, { dateStyle: "medium", timeStyle: "short" })} WIB` : "Sekarang"}</time></div>}
       <div className="incident-affected-list">{affectedServices.map((service) => <div className="incident-affected-entry" key={service.key}>
         <div className="incident-affected-service"><strong>{service.name}</strong><Link href={service.url} target="_blank" rel="noopener noreferrer">{service.host}</Link></div>
+        {service.key === "sapada" && affectedComponents.length > 0 && <p className="incident-affected-components">{affectedComponents.join(" · ")}</p>}
         {incident.state !== "scheduled" && <div className="incident-impact-track" role="img" aria-label={`${service.name}: ${maintenance ? "pemeliharaan" : "gangguan"} dilaporkan dari ${formatJakarta(affectedAt, { dateStyle: "medium", timeStyle: "short" })} WIB hingga ${resolved ? `${formatJakarta(activityEnd, { dateStyle: "medium", timeStyle: "short" })} WIB` : "sekarang"}`}>
           <span className="incident-impact-before" style={{ width: `${widths.before}%` }} />
           <span className={`incident-impact-affected impact-${maintenance ? "maintenance" : "incident"}`} style={{ width: `${widths.affected}%` }} />

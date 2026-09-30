@@ -1,4 +1,4 @@
-import { boolean, index, integer, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 
 export const checks = pgTable("checks", {
   id: serial("id").primaryKey(),
@@ -13,6 +13,7 @@ export const checks = pgTable("checks", {
 export const incidents = pgTable("incidents", {
   id: serial("id").primaryKey(),
   serviceKey: text("service_key").notNull().default("sapada"),
+  affectedComponentKeys: jsonb("affected_component_keys").$type<string[]>(),
   title: text("title").notNull(),
   message: text("message").notNull(),
   kind: text("kind").notNull().default("incident"),

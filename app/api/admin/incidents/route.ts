@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { isAdmin, sameOrigin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { initialState, isIncidentKind } from "@/lib/incident";
+import { parseAffectedComponentKeys } from "@/lib/incident-components";
 import { incidentHistoryTag } from "@/lib/incident-history";
 import { isIncidentServiceKey } from "@/lib/incident-service";
 
@@ -14,14 +15,15 @@ export async function POST(request: Request) {
   const message = String(form.get("message") ?? "").trim();
   const kind = String(form.get("kind") ?? "incident");
   const serviceKey = String(form.get("serviceKey") ?? "");
-  if (!title || !message || title.length > 120 || message.length > 2000 || !isIncidentKind(kind) || !isIncidentServiceKey(serviceKey)) {
+  const affectedComponentKeys = parseAffectedComponentKeys(serviceKey, form.getAll("componentKeys"));
+  if (!title || !message || title.length > 120 || message.length > 2000 || !isIncidentKind(kind) || !isIncidentServiceKey(serviceKey) || affectedComponentKeys === undefined) {
     return Response.redirect(new URL("/admin?error=validation", request.url), 303);
   }
   const db = getDb();
   const state = initialState(kind);
   await db.execute(sql`WITH created AS (
-    INSERT INTO incidents (title, message, kind, state, service_key)
-    VALUES (${title}, ${message}, ${kind}, ${state}, ${serviceKey})
+    INSERT INTO incidents (title, message, kind, state, service_key, affected_component_keys)
+    VALUES (${title}, ${message}, ${kind}, ${state}, ${serviceKey}, ${JSON.stringify(affectedComponentKeys)}::jsonb)
     RETURNING id, created_at
   ) INSERT INTO incident_updates (incident_id, state, message, created_at)
     SELECT id, ${state}, ${message}, created_at FROM created`);

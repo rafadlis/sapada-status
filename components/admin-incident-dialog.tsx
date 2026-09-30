@@ -1,6 +1,8 @@
 "use client";
 
 import { AdminSelect } from "@/components/admin-select";
+import { AdminComponentCheckboxes } from "@/components/admin-component-checkboxes";
+import { sapadaIncidentComponents } from "@/lib/incident-components";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,9 +21,11 @@ type AdminIncidentDialogProps = {
   title: string;
   kind: string;
   state: string;
+  serviceKey: string;
+  affectedComponentKeys: string[] | null;
 };
 
-export function AdminIncidentDialog({ id, title, kind, state }: AdminIncidentDialogProps) {
+export function AdminIncidentDialog({ id, title, kind, state, serviceKey, affectedComponentKeys }: AdminIncidentDialogProps) {
   const options = (kind === "maintenance" ? maintenanceStates : incidentStates)
     .map((value) => ({ value, label: stateLabel(value) }));
 
@@ -35,6 +39,7 @@ export function AdminIncidentDialog({ id, title, kind, state }: AdminIncidentDia
         <DialogDescription>{title}</DialogDescription>
       </DialogHeader>
       <form className="admin-form admin-dialog-form" action={`/api/admin/incidents/${id}`} method="post">
+        {serviceKey === "sapada" && <AdminComponentCheckboxes defaultSelected={affectedComponentKeys ?? sapadaIncidentComponents.map((component) => component.key)} />}
         <AdminSelect id={`state-${id}`} label="Tahap berikutnya" name="state" defaultValue={state} options={options} />
         <label htmlFor={`note-${id}`}>Catatan pembaruan</label>
         <textarea id={`note-${id}`} name="message" rows={4} maxLength={2000} placeholder="Jelaskan perkembangan terbaru kepada publik." required />

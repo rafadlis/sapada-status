@@ -157,6 +157,7 @@ button.reference-components-toggle:focus-visible { outline: 2px solid #174b86; o
 .incident-affected-service { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; padding: 16px 16px 10px; font-size: 13px; }
 .incident-affected-service strong { font-weight: 650; }
 .incident-affected-service a { color: #7d8798; font-size: 12px; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.incident-affected-components { margin: -3px 16px 12px; color: #65758b; font-size: 12px; line-height: 1.5; }
 .incident-impact-track { display: flex; width: calc(100% - 32px); height: 16px; margin: 0 16px 17px; overflow: hidden; border-radius: 3px; background: #e5e9ed; }
 .incident-impact-track span { display: block; height: 100%; min-width: 0; }
 .incident-impact-before { background: #dfe4ea; }

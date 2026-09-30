@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import Link from "next/link";
 import { AdminIncidentDialog } from "@/components/admin-incident-dialog";
+import { AdminIncidentTarget } from "@/components/admin-incident-target";
 import { AdminSelect } from "@/components/admin-select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,8 +11,8 @@ import { PageLoading } from "@/components/page-loading";
 import { isAdmin } from "@/lib/auth";
 import { formatJakarta, getStatusData } from "@/lib/status";
 import { kindLabel, stateLabel } from "@/lib/incident";
-import { allServicesKey, incidentServiceLabel } from "@/lib/incident-service";
-import { services } from "@/lib/services";
+import { affectedComponentNames } from "@/lib/incident-components";
+import { incidentServiceLabel } from "@/lib/incident-service";
 
 type AdminProps = { searchParams: Promise<{ error?: string; created?: string; updated?: string }> };
 
@@ -29,7 +30,7 @@ async function AdminContent({ searchParams }: AdminProps) {
   return <main className="site-width subpage-main admin-main">
     <span className="eyebrow">PENGELOLA BAPENDA</span><h1>{authorized ? "Kelola pembaruan" : "Masuk sebagai pengelola"}</h1>
     {params.error === "login" && !authorized && <p className="form-feedback form-error" role="alert">Kata sandi tidak sesuai. Coba lagi.</p>}
-    {params.error === "validation" && authorized && <p className="form-feedback form-error" role="alert">Pilih layanan dan lengkapi judul serta catatan publik sesuai batas karakter.</p>}
+    {params.error === "validation" && authorized && <p className="form-feedback form-error" role="alert">Pilih layanan dan komponen terdampak, lalu lengkapi judul serta catatan publik sesuai batas karakter.</p>}
     {(params.created === "1" || params.updated === "1") && authorized && <p className="form-feedback form-success" role="status">Pembaruan telah diterbitkan.</p>}
     {!authorized ? <form className="admin-form" action="/api/admin/login" method="post">
       <p>Masukkan kata sandi untuk menerbitkan informasi layanan.</p>
@@ -44,7 +45,7 @@ async function AdminContent({ searchParams }: AdminProps) {
       <section className="admin-section"><Card className="admin-panel">
         <CardHeader className="border-b"><CardTitle><h2>Terbitkan informasi baru</h2></CardTitle></CardHeader>
         <CardContent><form className="admin-form admin-create-form" action="/api/admin/incidents" method="post">
-          <AdminSelect id="serviceKey" label="Layanan" name="serviceKey" defaultValue={services[0].key} required options={[{ value: allServicesKey, label: "Semua layanan" }, ...services.map((service) => ({ value: service.key, label: service.name }))]} />
+          <AdminIncidentTarget />
           <AdminSelect id="kind" label="Jenis informasi" name="kind" defaultValue="incident" options={[{ value: "incident", label: "Gangguan" }, { value: "maintenance", label: "Pemeliharaan terjadwal" }]} />
           <p className="form-hint">Gangguan dimulai pada tahap “Sedang diselidiki”. Pemeliharaan dimulai pada tahap “Dijadwalkan”.</p>
           <label htmlFor="title">Judul</label><input id="title" name="title" maxLength={120} placeholder="Contoh: Akses layanan terganggu" required />
@@ -61,10 +62,10 @@ async function AdminContent({ searchParams }: AdminProps) {
             <TableHead>Informasi</TableHead><TableHead>Tahap</TableHead><TableHead>Diperbarui</TableHead><TableHead className="text-right">Aksi</TableHead>
           </TableRow></TableHeader>
           <TableBody>{data.incidents.map((incident) => <TableRow key={incident.id}>
-            <TableCell className="admin-table-title"><strong>{incident.title}</strong><span>{incidentServiceLabel(incident.serviceKey)} · {kindLabel(incident.kind)}</span></TableCell>
+            <TableCell className="admin-table-title"><strong>{incident.title}</strong><span>{incidentServiceLabel(incident.serviceKey)} · {kindLabel(incident.kind)}</span>{incident.affectedComponentKeys && <span>{affectedComponentNames(incident.affectedComponentKeys).join(" · ")}</span>}</TableCell>
             <TableCell><span className="admin-stage">{stateLabel(incident.state)}</span></TableCell>
             <TableCell className="admin-table-date">{formatJakarta(incident.updatedAt, { dateStyle: "medium", timeStyle: "short" })} WIB</TableCell>
-            <TableCell><div className="admin-row-actions"><Link href={`/incidents/${incident.id}`} aria-label={`Lihat ${incident.title} di halaman publik`}>Lihat publik</Link><AdminIncidentDialog id={incident.id} title={incident.title} kind={incident.kind} state={incident.state} /></div></TableCell>
+            <TableCell><div className="admin-row-actions"><Link href={`/incidents/${incident.id}`} aria-label={`Lihat ${incident.title} di halaman publik`}>Lihat publik</Link><AdminIncidentDialog id={incident.id} title={incident.title} kind={incident.kind} state={incident.state} serviceKey={incident.serviceKey} affectedComponentKeys={incident.affectedComponentKeys} /></div></TableCell>
           </TableRow>)}</TableBody>
         </Table> : <p className="admin-empty">Belum ada informasi yang diterbitkan.</p>}</CardContent>
       </Card></section>

@@ -18,12 +18,13 @@ type AdminSelectProps = {
   options: Option[];
   defaultValue: string;
   required?: boolean;
+  onValueChange?: (value: string | null) => void;
 };
 
-export function AdminSelect({ id, label, name, options, defaultValue, required }: AdminSelectProps) {
+export function AdminSelect({ id, label, name, options, defaultValue, required, onValueChange }: AdminSelectProps) {
   return <>
     <label id={`${id}-label`} htmlFor={id}>{label}</label>
-    <Select items={options} name={name} defaultValue={defaultValue} required={required}>
+    <Select items={options} name={name} defaultValue={defaultValue} required={required} onValueChange={onValueChange}>
       <SelectTrigger id={id} aria-labelledby={`${id}-label`} className="w-full">
         <SelectValue />
       </SelectTrigger>

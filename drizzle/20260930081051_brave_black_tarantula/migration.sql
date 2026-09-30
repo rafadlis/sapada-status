@@ -1,0 +1,1 @@
+ALTER TABLE "incidents" ADD COLUMN "affected_component_keys" jsonb;
