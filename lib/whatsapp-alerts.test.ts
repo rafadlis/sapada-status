@@ -1,17 +1,25 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { alertBodyValues, buildOcaAlertPayload, parseAlertRecipients, sendOcaAlert } from "./whatsapp-alerts";
+import { alertBodyValues, buildOcaAlertPayload, parseAlertRecipient, parseAlertRecipients, sendOcaAlert } from "./whatsapp-alerts";
 
 const failures = [
   { serviceKey: "sapada", statusCode: 502 },
   { serviceKey: "sapada-tte", statusCode: null },
 ];
 const checkedAt = new Date("2026-09-30T07:00:00.000Z");
-const config = { endpoint: "https://oca.example.test/send", token: "secret", templateCode: "utility:peringatan_gangguan_layanan_bapenda" };
+const config = { endpoint: "https://oca.example.test/send", token: "secret", templateCode: "marketing:peringatan_gangguan_layanan_bapenda" };
 
 test("recipient configuration normalizes Indonesian numbers and removes duplicates", () => {
   assert.deepEqual(parseAlertRecipients("0813-1526-5538, +6281315265538\n628123456789"), ["6281315265538", "628123456789"]);
   assert.throws(() => parseAlertRecipients("6281315265538,not-a-phone"));
+});
+
+test("admin recipient input accepts one valid number only", () => {
+  assert.equal(parseAlertRecipient("+62813-1526-5538"), "6281315265538");
+  assert.equal(parseAlertRecipient("081315265538"), "6281315265538");
+  for (const input of ["", "123", "6281315265538,6281234567890", "6281315265538 6281315265538", "wrong"]) {
+    assert.equal(parseAlertRecipient(input), null);
+  }
 });
 
 test("OCA payload follows the three body variables in order", () => {

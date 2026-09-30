@@ -38,6 +38,14 @@ export const monitorAlertStates = pgTable("monitor_alert_states", {
   newFailure: boolean("new_failure").notNull().default(false),
 });
 
+export const whatsappAlertRecipients = pgTable("whatsapp_alert_recipients", {
+  id: serial("id").primaryKey(),
+  phone: text("phone").notNull().unique(),
+  name: text("name").notNull().default(""),
+  enabled: boolean("enabled").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const whatsappAlertDeliveries = pgTable("whatsapp_alert_deliveries", {
   id: serial("id").primaryKey(),
   phone: text("phone").notNull(),

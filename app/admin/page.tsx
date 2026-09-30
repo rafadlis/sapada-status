@@ -6,13 +6,15 @@ import { desc } from "drizzle-orm";
 import { AdminIncidentDialog } from "@/components/admin-incident-dialog";
 import { AdminIncidentTarget } from "@/components/admin-incident-target";
 import { AdminSelect } from "@/components/admin-select";
+import { AdminRecipientDialog } from "@/components/admin-recipient-dialog";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SiteHeader } from "@/components/site-header";
 import { PageLoading } from "@/components/page-loading";
 import { isAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { whatsappAlertDeliveries } from "@/lib/db/schema";
+import { whatsappAlertDeliveries, whatsappAlertRecipients } from "@/lib/db/schema";
 import { formatJakarta, getStatusData } from "@/lib/status";
 import { kindLabel, stateLabel } from "@/lib/incident";
 import { affectedComponentNames } from "@/lib/incident-components";
@@ -25,7 +27,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-type AdminProps = { searchParams: Promise<{ error?: string; created?: string; updated?: string }> };
+type AdminProps = { searchParams: Promise<{ error?: string; created?: string; updated?: string; recipients?: string }> };
 
 export default function AdminPage({ searchParams }: AdminProps) {
   return <div className="status-site"><SiteHeader />
@@ -37,17 +39,21 @@ async function AdminContent({ searchParams }: AdminProps) {
   await connection();
   const params = await searchParams;
   const authorized = await isAdmin();
-  const [data, alertDeliveries] = authorized
+  const [data, alertDeliveries, recipients] = authorized
     ? await Promise.all([
       getStatusData(null),
       getDb().select().from(whatsappAlertDeliveries).orderBy(desc(whatsappAlertDeliveries.createdAt)).limit(20),
+      getDb().select().from(whatsappAlertRecipients).orderBy(whatsappAlertRecipients.id),
     ])
-    : [null, []];
+    : [null, [], []];
   return <main className="site-width subpage-main admin-main">
     <span className="eyebrow">PENGELOLA BAPENDA</span><h1>{authorized ? "Kelola pembaruan" : "Masuk sebagai pengelola"}</h1>
     {params.error === "login" && !authorized && <p className="form-feedback form-error" role="alert">Kata sandi tidak sesuai. Coba lagi.</p>}
     {params.error === "validation" && authorized && <p className="form-feedback form-error" role="alert">Pilih layanan dan komponen terdampak, lalu lengkapi judul serta catatan publik sesuai batas karakter.</p>}
     {(params.created === "1" || params.updated === "1") && authorized && <p className="form-feedback form-success" role="status">Pembaruan telah diterbitkan.</p>}
+    {params.error === "recipient" && authorized && <p className="form-feedback form-error" role="alert">Masukkan satu nomor WhatsApp yang valid dan nama maksimal 80 karakter.</p>}
+    {params.error === "recipient-duplicate" && authorized && <p className="form-feedback form-error" role="alert">Nomor tersebut sudah terdaftar atau penerima tidak ditemukan.</p>}
+    {params.recipients === "updated" && authorized && <p className="form-feedback form-success" role="status">Daftar penerima WhatsApp telah diperbarui.</p>}
     {!authorized ? <form className="admin-form" action="/api/admin/login" method="post">
       <p>Masukkan kata sandi untuk menerbitkan informasi layanan.</p>
       <label htmlFor="password">Kata sandi</label><input id="password" name="password" type="password" autoComplete="current-password" required />
@@ -85,9 +91,30 @@ async function AdminContent({ searchParams }: AdminProps) {
           </TableRow>)}</TableBody>
         </Table> : <p className="admin-empty">Belum ada informasi yang diterbitkan.</p>}</CardContent>
       </Card></section>
+      <section className="admin-section" id="whatsapp-recipients"><Card className="admin-panel">
+        <CardHeader className="border-b admin-recipient-header">
+          <div><CardTitle><h2>Penerima WhatsApp</h2></CardTitle>
+            <CardDescription>{recipients.filter((recipient) => recipient.enabled).length} penerima aktif · peringatan gangguan otomatis</CardDescription>
+          </div><AdminRecipientDialog />
+        </CardHeader>
+        <CardContent className="admin-table-content">{recipients.length ? <Table aria-label="Daftar penerima WhatsApp" className="admin-incident-table admin-recipient-table">
+          <TableHeader><TableRow><TableHead>Penerima</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Aksi</TableHead></TableRow></TableHeader>
+          <TableBody>{recipients.map((recipient) => <TableRow key={recipient.id}>
+            <TableCell><strong>{recipient.name || recipient.phone}</strong>{recipient.name && <div>{recipient.phone}</div>}</TableCell>
+            <TableCell><span className="admin-stage">{recipient.enabled ? "Aktif" : "Nonaktif"}</span></TableCell>
+            <TableCell><div className="admin-row-actions">
+              <AdminRecipientDialog recipient={{ id: recipient.id, name: recipient.name, phone: recipient.phone }} />
+              <form action="/api/admin/whatsapp-recipients" method="post">
+                <input type="hidden" name="intent" value="toggle" /><input type="hidden" name="id" value={recipient.id} />
+                <Button type="submit" variant="outline" size="sm" aria-label={`${recipient.enabled ? "Nonaktifkan" : "Aktifkan"} ${recipient.name || recipient.phone}`}>{recipient.enabled ? "Nonaktifkan" : "Aktifkan"}</Button>
+              </form>
+            </div></TableCell>
+          </TableRow>)}</TableBody>
+        </Table> : <p className="admin-empty">Tambahkan penerima untuk mendapat peringatan gangguan.</p>}</CardContent>
+      </Card></section>
       <section className="admin-section"><Card className="admin-panel">
         <CardHeader className="border-b"><CardTitle><h2>Peringatan WhatsApp</h2></CardTitle>
-          <CardDescription>{whatsappAlertConfigured() ? "Aktif · pesan dikirim saat gangguan baru terdeteksi" : "Belum aktif · lengkapi konfigurasi OCA dan penerima"}</CardDescription>
+          <CardDescription>{whatsappAlertConfigured() && recipients.some((recipient) => recipient.enabled) ? "Aktif · pesan dikirim saat gangguan baru terdeteksi" : "Belum aktif · lengkapi konfigurasi OCA dan penerima"}</CardDescription>
         </CardHeader>
         <CardContent className="admin-table-content">{alertDeliveries.length ? <Table aria-label="Riwayat pengiriman peringatan" className="admin-incident-table">
           <TableHeader><TableRow><TableHead>Waktu</TableHead><TableHead>Penerima</TableHead><TableHead>Gangguan</TableHead><TableHead>Pengiriman</TableHead></TableRow></TableHeader>
@@ -95,7 +122,7 @@ async function AdminContent({ searchParams }: AdminProps) {
             <TableCell className="admin-table-date">{formatJakarta(delivery.createdAt, { dateStyle: "medium", timeStyle: "short" })} WIB</TableCell>
             <TableCell>••••{delivery.phone.slice(-4)}</TableCell>
             <TableCell>{delivery.failures.map((failure) => alertFailureName(failure.serviceKey)).join(", ")}</TableCell>
-            <TableCell><span className="admin-stage">{{ pending: "Menunggu", sending: "Memproses", accepted: "Diterima OCA", retry: "Mencoba lagi", failed: "Gagal", needs_review: "Perlu ditinjau" }[delivery.status] ?? delivery.status}</span>{delivery.lastError && <span className="admin-alert-error">{delivery.lastError}</span>}</TableCell>
+            <TableCell><span className="admin-stage">{{ pending: "Menunggu", sending: "Memproses", accepted: "Diterima OCA", retry: "Mencoba lagi", failed: "Gagal", needs_review: "Perlu ditinjau", cancelled: "Dibatalkan" }[delivery.status] ?? delivery.status}</span>{delivery.lastError && <span className="admin-alert-error">{delivery.lastError}</span>}</TableCell>
           </TableRow>)}</TableBody>
         </Table> : <p className="admin-empty">Belum ada peringatan yang dikirim.</p>}</CardContent>
       </Card></section>

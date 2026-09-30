@@ -1,5 +1,6 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
+import { whatsappAlertRecipients } from "@/lib/db/schema";
 import { components } from "@/lib/components";
 import { services } from "@/lib/services";
 
@@ -21,6 +22,15 @@ export function parseAlertRecipients(raw: string) {
     return phone;
   });
   return [...new Set(recipients)];
+}
+
+export function parseAlertRecipient(raw: string) {
+  try {
+    const recipients = parseAlertRecipients(raw.trim());
+    return recipients.length === 1 && !/[\s,;]/.test(raw.trim()) ? recipients[0] : null;
+  } catch {
+    return null;
+  }
 }
 
 export function alertFailureName(key: string) {
@@ -54,10 +64,9 @@ function alertConfig() {
   const endpoint = process.env.WHATSAPP_BIZ_OCA_ENDPOINT;
   const token = process.env.WHATSAPP_BIZ_OCA_TOKEN;
   const templateCode = process.env.WHATSAPP_BIZ_OCA_TEMPLATE_CODE_STATUS_ALERT;
-  const recipients = parseAlertRecipients(process.env.WHATSAPP_ALERT_RECIPIENTS ?? "");
-  if (!endpoint || !token || !templateCode || recipients.length === 0) return null;
+  if (!endpoint || !token || !templateCode) return null;
   if (new URL(endpoint).protocol !== "https:") throw new Error("OCA endpoint must use HTTPS");
-  return { endpoint, token, templateCode, recipients };
+  return { endpoint, token, templateCode };
 }
 
 export function whatsappAlertConfigured() {
@@ -102,10 +111,9 @@ export async function sendOcaAlert(
   }
 }
 
-async function recordAlertTransitions(results: CheckResult[], recipients: string[], checkedAt: Date) {
-  if (results.length === 0) return;
-  const values = sql.join(results.map((result) => sql`(${result.serviceKey}, ${result.ok}, ${result.statusCode})`), sql`, `);
-  await getDb().execute(sql`WITH input(service_key, ok, status_code) AS (VALUES ${values}),
+export function buildAlertTransitionQuery(results: CheckResult[], recipients: string[], checkedAt: Date) {
+  const values = sql.join(results.map((result) => sql`(${result.serviceKey}::text, ${result.ok}::boolean, ${result.statusCode}::integer)`), sql`, `);
+  return sql`WITH input(service_key, ok, status_code) AS (VALUES ${values}),
     changed AS (
       INSERT INTO monitor_alert_states (service_key, ok, checked_at, new_failure)
       SELECT service_key, ok, ${checkedAt}, NOT ok FROM input WHERE true
@@ -123,16 +131,22 @@ async function recordAlertTransitions(results: CheckResult[], recipients: string
     INSERT INTO whatsapp_alert_deliveries (phone, failures)
     SELECT recipient.phone, failures.details
     FROM failures CROSS JOIN jsonb_array_elements_text(${JSON.stringify(recipients)}::jsonb) AS recipient(phone)
-    WHERE failures.details IS NOT NULL`);
+    WHERE failures.details IS NOT NULL`;
+}
+
+async function recordAlertTransitions(results: CheckResult[], recipients: string[], checkedAt: Date) {
+  if (results.length === 0) return;
+  await getDb().execute(buildAlertTransitionQuery(results, recipients, checkedAt));
 }
 
 async function dispatchPendingAlerts(config: { endpoint: string; token: string; templateCode: string }) {
   const claimed = await getDb().execute(sql<ClaimedDelivery>`UPDATE whatsapp_alert_deliveries
     SET status = 'sending', attempts = attempts + 1, claimed_at = now()
     WHERE id IN (
-      SELECT id FROM whatsapp_alert_deliveries
-      WHERE status = 'pending' AND next_attempt_at <= now()
-      ORDER BY id LIMIT 4 FOR UPDATE SKIP LOCKED
+      SELECT delivery.id FROM whatsapp_alert_deliveries AS delivery
+      JOIN whatsapp_alert_recipients AS recipient ON recipient.phone = delivery.phone AND recipient.enabled
+      WHERE delivery.status = 'pending' AND delivery.next_attempt_at <= now()
+      ORDER BY delivery.id LIMIT 4 FOR UPDATE OF delivery SKIP LOCKED
     )
     RETURNING id, phone, failures, created_at, attempts`);
   const deliveries = claimed.rows as ClaimedDelivery[];
@@ -153,8 +167,10 @@ async function dispatchPendingAlerts(config: { endpoint: string; token: string; 
 export async function processWhatsappAlerts(results: CheckResult[]) {
   const config = alertConfig();
   if (!config) return { status: "unconfigured" as const, processed: 0 };
+  const recipients = await getDb().select({ phone: whatsappAlertRecipients.phone }).from(whatsappAlertRecipients)
+    .where(eq(whatsappAlertRecipients.enabled, true));
   const checkedAt = new Date();
-  await recordAlertTransitions(results, config.recipients, checkedAt);
+  await recordAlertTransitions(results, recipients.map((recipient) => recipient.phone), checkedAt);
   const processed = await dispatchPendingAlerts(config);
   return { status: "enabled" as const, processed };
 }
