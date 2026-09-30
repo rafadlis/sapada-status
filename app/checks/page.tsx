@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import Link from "next/link";
-import { and, desc, eq, gte, lt } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
 import { PageLoading } from "@/components/page-loading";
 import { formatCheckResult } from "@/lib/check-result";
@@ -11,14 +11,14 @@ import { checks } from "@/lib/db/schema";
 import { defaultHistoryRange, getHistoryRange } from "@/lib/history-range";
 import { formatJakarta } from "@/lib/status";
 import { getService, services } from "@/lib/services";
-import { getComponent } from "@/lib/components";
+import { components, getComponent } from "@/lib/components";
 
 export const metadata: Metadata = {
   title: "Detail pemeriksaan | Status Bapenda Garut",
   robots: { index: false, follow: false },
 };
 
-type Query = { from?: string | string[]; to?: string | string[]; page?: string | string[]; range?: string | string[]; service?: string | string[] };
+type Query = { from?: string | string[]; to?: string | string[]; page?: string | string[]; range?: string | string[]; service?: string | string[]; view?: string | string[] };
 const pageSize = 100;
 const dayMs = 24 * 60 * 60 * 1000;
 
@@ -40,6 +40,7 @@ async function ChecksContent({ searchParams }: ChecksProps) {
   const range = getHistoryRange(params.range);
   const requestedService = single(params.service);
   const service = requestedService === undefined ? services[0] : getService(requestedService) ?? getComponent(requestedService);
+  const overall = service?.key === "sapada" && single(params.view) === "overall";
   const from = Number(single(params.from));
   const to = Number(single(params.to));
   const requestedPage = Number(single(params.page) ?? "1");
@@ -54,8 +55,13 @@ async function ChecksContent({ searchParams }: ChecksProps) {
 
   if (valid && service) {
     try {
-      const result = await getDb().select().from(checks)
-        .where(and(eq(checks.serviceKey, service.key), gte(checks.checkedAt, new Date(from)), lt(checks.checkedAt, new Date(to))))
+      const db = getDb();
+      const sapadaKeys = [services[0].key, ...components.map((component) => component.key)];
+      const completeRuns = db.select({ checkedAt: checks.checkedAt }).from(checks)
+        .where(and(inArray(checks.serviceKey, sapadaKeys), gte(checks.checkedAt, new Date(from)), lt(checks.checkedAt, new Date(to))))
+        .groupBy(checks.checkedAt).having(sql`count(distinct ${checks.serviceKey}) = ${sapadaKeys.length}`);
+      const result = await db.select().from(checks)
+        .where(and(overall ? and(inArray(checks.serviceKey, sapadaKeys), inArray(checks.checkedAt, completeRuns)) : eq(checks.serviceKey, service.key), gte(checks.checkedAt, new Date(from)), lt(checks.checkedAt, new Date(to))))
         .orderBy(desc(checks.checkedAt), desc(checks.id))
         .limit(pageSize + 1).offset((requestedPage - 1) * pageSize);
       hasNext = result.length > pageSize;
@@ -69,13 +75,13 @@ async function ChecksContent({ searchParams }: ChecksProps) {
   const period = valid
     ? `${formatJakarta(new Date(from), { dateStyle: "medium", timeStyle: "short" })}–${formatJakarta(new Date(to), { timeStyle: "short" })} WIB`
     : null;
-  const pageHref = (page: number) => `/checks?service=${service?.key ?? "sapada"}&from=${from}&to=${to}&range=${range.key}&page=${page}`;
+  const pageHref = (page: number) => `/checks?service=${service?.key ?? "sapada"}&from=${from}&to=${to}&range=${range.key}&page=${page}${overall ? "&view=overall" : ""}`;
 
   return (
       <main className="site-width check-detail-page">
         <Link className="back-link" href={backHref}>← Kembali ke status</Link>
         <p className="kicker">Riwayat pemantauan</p>
-        <h1>Detail pemeriksaan {service?.name}</h1>
+        <h1>Detail pemeriksaan {overall ? "SAPADA dan komponennya" : service?.name}</h1>
         {period && <p className="check-period">{period}</p>}
         {!valid ? <p className="check-message">Rentang waktu tidak valid. Pilih batang riwayat dari halaman status.</p>
           : unavailable ? <p className="check-message">Riwayat belum dapat dimuat. Coba lagi nanti.</p>
@@ -83,7 +89,7 @@ async function ChecksContent({ searchParams }: ChecksProps) {
               : <div className="check-list">{rows.map((check) => (
                 <article className="check-row" key={check.id}>
                   <div><time dateTime={check.checkedAt.toISOString()}>{formatJakarta(check.checkedAt, { dateStyle: "medium", timeStyle: "medium" })} WIB</time><span className={`check-result ${check.ok ? "check-ok" : "check-failed"}`}>{check.ok ? "Berhasil" : "Gagal"}</span></div>
-                  <p>{formatCheckResult(check)}</p>
+                  <p>{overall && <><strong>{getComponent(check.serviceKey)?.name ?? "Situs SAPADA"}</strong> · </>}{formatCheckResult(check)}</p>
                 </article>
               ))}</div>}
         {valid && !unavailable && (requestedPage > 1 || hasNext) && <nav className="check-pagination" aria-label="Halaman riwayat pemeriksaan">

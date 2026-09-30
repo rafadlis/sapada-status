@@ -40,12 +40,15 @@ function ServiceHistoryRow({ service, range, now, afterName }: {
   const { start, bucketMs } = getHistoryWindow(range, now);
   const buckets = service.history;
   const publicService = getService(service.service.key);
+  const name = service.displayName ?? service.service.name;
+  const overall = service.isOverall === true;
   const stateLabel = service.state === "operational" ? "Beroperasi" : service.state === "degraded" ? "Terganggu" : "Belum diketahui";
+  const uptimeHint = overall ? "Persentase putaran pemeriksaan lengkap saat seluruh komponen berhasil" : "Persentase pemeriksaan yang berhasil selama rentang terpilih";
 
-  return <div className="reference-service" aria-label={`${service.service.name}: ${stateLabel}`}>
-    <div className="reference-service-head"><div><span className={`reference-service-icon status-${service.state}`} aria-hidden="true">{service.state === "operational" ? "✓" : service.state === "degraded" ? "!" : "?"}</span><strong>{service.service.name}</strong>{afterName}
-      {publicService && <Tooltip><TooltipTrigger render={<Link className="reference-service-domain" href={publicService.url} target="_blank" rel="noopener noreferrer" aria-label={`Buka ${service.service.name} di tab baru`} />}>{publicService.host}</TooltipTrigger><TooltipContent>Buka {service.service.name} di tab baru</TooltipContent></Tooltip>}
-    </div><Tooltip><TooltipTrigger render={<span className="reference-uptime" tabIndex={0} aria-label={`${service.uptime === null ? "Waktu aktif belum tersedia" : `${service.uptime.toFixed(2)}% waktu aktif`}. Persentase pemeriksaan yang berhasil selama rentang terpilih`} />}>{service.uptime === null ? "Waktu aktif belum tersedia" : `${service.uptime.toFixed(2)}% waktu aktif`}</TooltipTrigger><TooltipContent>Persentase pemeriksaan yang berhasil selama rentang terpilih</TooltipContent></Tooltip></div>
+  return <div className="reference-service" aria-label={`${name}: ${stateLabel}`}>
+    <div className="reference-service-head"><div><span className={`reference-service-icon status-${service.state}`} aria-hidden="true">{service.state === "operational" ? "✓" : service.state === "degraded" ? "!" : "?"}</span><strong>{name}</strong>{afterName}
+      {publicService && !overall && <Tooltip><TooltipTrigger render={<Link className="reference-service-domain" href={publicService.url} target="_blank" rel="noopener noreferrer" aria-label={`Buka ${name} di tab baru`} />}>{publicService.host}</TooltipTrigger><TooltipContent>Buka {name} di tab baru</TooltipContent></Tooltip>}
+    </div><Tooltip><TooltipTrigger render={<span className="reference-uptime" tabIndex={0} aria-label={`${service.uptime === null ? "Waktu aktif belum tersedia" : `${service.uptime.toFixed(2)}% waktu aktif`}. ${uptimeHint}`} />}>{service.uptime === null ? "Waktu aktif belum tersedia" : `${service.uptime.toFixed(2)}% waktu aktif`}</TooltipTrigger><TooltipContent>{uptimeHint}</TooltipContent></Tooltip></div>
     <div className={`reference-bars${range.buckets > 60 ? " reference-bars-dense" : ""}`} style={{ gridTemplateColumns: `repeat(${range.buckets}, minmax(0, 1fr))` }}>{buckets.map((bucket, index) => {
       const bucketStart = new Date(start.getTime() + index * bucketMs);
       const bucketEnd = new Date(start.getTime() + (index + 1) * bucketMs);
@@ -53,17 +56,18 @@ function ServiceHistoryRow({ service, range, now, afterName }: {
         ? formatJakarta(bucketStart, { dateStyle: "medium" })
         : `${formatJakarta(bucketStart, { dateStyle: "medium", timeStyle: "short" })}–${formatJakarta(bucketEnd, { timeStyle: "short" })} WIB`;
       const bucketState = bucket.count === 0 ? "empty" : bucket.failedCount === 0 ? "good" : bucket.failedCount === bucket.count ? "failed" : "mixed";
-      const summary = bucketState === "empty" ? "Belum ada pemeriksaan" : bucketState === "good" ? `${bucket.count} pemeriksaan berhasil` : bucketState === "mixed" ? `Sebagian gagal: ${bucket.failedCount} dari ${bucket.count} pemeriksaan gagal` : `${bucket.count} pemeriksaan gagal`;
+      const subject = overall ? "putaran pemeriksaan lengkap" : "pemeriksaan";
+      const summary = bucketState === "empty" ? "Belum ada pemeriksaan" : bucketState === "good" ? `${bucket.count} ${subject} berhasil` : bucketState === "mixed" ? `Sebagian gagal: ${bucket.failedCount} dari ${bucket.count} ${subject} gagal` : `${bucket.count} ${subject} gagal`;
       const failure = bucket.latestFailure;
-      const label = `${service.service.name}, ${period}: ${summary}${failure ? `. ${formatCheckResult(failure)}` : ""}`;
+      const label = `${name}, ${period}: ${summary}${failure ? `. ${formatCheckResult(failure)}` : ""}`;
       const barClass = `reference-bar reference-bar-${bucketState}`;
       const trigger = bucket.count > 0
-        ? <Link href={`/checks?service=${service.service.key}&from=${bucketStart.getTime()}&to=${Math.min(bucketEnd.getTime(), now.getTime())}&range=${range.key}`} className={barClass} aria-label={`${label}. Lihat semua pemeriksaan.`} />
+        ? <Link href={`/checks?service=${service.service.key}&from=${bucketStart.getTime()}&to=${Math.min(bucketEnd.getTime(), now.getTime())}&range=${range.key}${overall ? "&view=overall" : ""}`} className={barClass} aria-label={`${label}. Lihat semua pemeriksaan.`} />
         : <button type="button" className={barClass} aria-label={label} />;
       return <Tooltip key={index}>
         <TooltipTrigger render={trigger} />
         <TooltipContent side="top" className="reference-check-tooltip">
-          <strong>{service.service.name} · {period}</strong>
+          <strong>{name} · {period}</strong>
           <span>{summary}</span>
           {failure && <span>Terakhir gagal: {formatJakarta(failure.checkedAt, { dateStyle: "medium", timeStyle: "medium" })} WIB. {formatCheckResult(failure)}</span>}
           {bucket.count > 0 && <span className="reference-tooltip-action">Klik batang untuk melihat pemeriksaan</span>}
