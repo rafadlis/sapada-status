@@ -5,6 +5,7 @@ import "./status-ui.css";
 import "./reference-ui.css";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { absoluteUrl, pageMetadata, siteDescription, siteName, siteUrl } from "@/lib/seo";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -19,8 +20,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Status Layanan Bapenda Garut",
-  description: "Informasi ketersediaan SAPADA, Struk Berhadiah, Simpul PAD, dan situs Bapenda Kabupaten Garut.",
+  ...pageMetadata(siteName, siteDescription, "/"),
+  metadataBase: new URL(siteUrl),
+  title: { default: siteName, template: "%s | Status Bapenda Garut" },
+  applicationName: siteName,
+  robots: { index: process.env.VERCEL_ENV !== "preview", follow: true },
+  alternates: {
+    types: { "application/rss+xml": absoluteUrl("/rss.xml") },
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

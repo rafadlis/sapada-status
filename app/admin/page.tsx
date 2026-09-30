@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -17,6 +18,12 @@ import { kindLabel, stateLabel } from "@/lib/incident";
 import { affectedComponentNames } from "@/lib/incident-components";
 import { incidentServiceLabel } from "@/lib/incident-service";
 import { alertFailureName, whatsappAlertConfigured } from "@/lib/whatsapp-alerts";
+
+export const metadata: Metadata = {
+  title: "Pengelola",
+  description: "Halaman pengelola pembaruan layanan Bapenda Garut.",
+  robots: { index: false, follow: false },
+};
 
 type AdminProps = { searchParams: Promise<{ error?: string; created?: string; updated?: string }> };
 

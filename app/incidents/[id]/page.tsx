@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { cache, Suspense } from "react";
 import { connection } from "next/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -10,12 +10,43 @@ import { getDb } from "@/lib/db";
 import { incidents, incidentUpdates } from "@/lib/db/schema";
 import { kindLabel, stateLabel } from "@/lib/incident";
 import { affectedComponentNames } from "@/lib/incident-components";
-import { getIncidentServices } from "@/lib/incident-service";
+import { getIncidentServices, incidentServiceLabel } from "@/lib/incident-service";
 import { formatJakarta } from "@/lib/status";
-
-export const metadata: Metadata = { title: "Detail pembaruan | Status Bapenda Garut" };
+import { absoluteUrl, pageMetadata, serializeJsonLd, siteName } from "@/lib/seo";
 
 type IncidentProps = { params: Promise<{ id: string }> };
+
+const getIncident = cache(async (rawId: string) => {
+  await connection();
+  const id = Number(rawId);
+  if (!Number.isSafeInteger(id) || id < 1) notFound();
+  const db = getDb();
+  const [incident] = await db.select().from(incidents).where(eq(incidents.id, id)).limit(1);
+  if (!incident) notFound();
+  const updates = await db.select().from(incidentUpdates).where(eq(incidentUpdates.incidentId, id))
+    .orderBy(desc(incidentUpdates.createdAt), desc(incidentUpdates.id));
+  const latestMessage = updates[0]?.message || (incident.state === "resolved"
+    ? incident.kind === "maintenance" ? "Pemeliharaan telah selesai." : "Gangguan telah selesai."
+    : incident.message);
+  return { incident, updates, latestMessage };
+});
+
+export async function generateMetadata({ params }: IncidentProps): Promise<Metadata> {
+  const { incident, latestMessage } = await getIncident((await params).id);
+  const message = latestMessage.replace(/\s+/g, " ").trim();
+  const summary = `${incidentServiceLabel(incident.serviceKey)}: ${stateLabel(incident.state)}. ${message}`;
+  const description = summary.length > 160 ? `${summary.slice(0, 157).trimEnd()}...` : summary;
+  const metadata = pageMetadata(incident.title, description, `/incidents/${incident.id}`);
+  return {
+    ...metadata,
+    openGraph: {
+      ...metadata.openGraph,
+      type: "article",
+      publishedTime: incident.createdAt.toISOString(),
+      modifiedTime: incident.updatedAt.toISOString(),
+    },
+  };
+}
 
 function elapsedLabel(later: Date, earlier: Date) {
   const minutes = Math.round((later.getTime() - earlier.getTime()) / 60_000);
@@ -45,14 +76,7 @@ export default function IncidentPage({ params }: IncidentProps) {
 }
 
 async function IncidentContent({ params }: IncidentProps) {
-  await connection();
-  const id = Number((await params).id);
-  if (!Number.isSafeInteger(id) || id < 1) notFound();
-  const db = getDb();
-  const [incident] = await db.select().from(incidents).where(eq(incidents.id, id)).limit(1);
-  if (!incident) notFound();
-  const updates = await db.select().from(incidentUpdates).where(eq(incidentUpdates.incidentId, id))
-    .orderBy(desc(incidentUpdates.createdAt), desc(incidentUpdates.id));
+  const { incident, updates, latestMessage } = await getIncident((await params).id);
   const latest = updates[0];
   const latestAt = latest?.createdAt ?? incident.updatedAt;
   const affectedServices = getIncidentServices(incident.serviceKey);
@@ -62,16 +86,41 @@ async function IncidentContent({ params }: IncidentProps) {
   const affectedAt = maintenance
     ? [...updates].reverse().find((update) => update.state === "in_progress")?.createdAt ?? incident.createdAt
     : incident.createdAt;
-  const latestMessage = latest?.message || (resolved
-    ? maintenance ? "Pemeliharaan telah selesai." : "Gangguan telah selesai."
-    : incident.message);
   const now = new Date();
   const resolvedAt = resolved ? incident.resolvedAt ?? latestAt : null;
   const activityEnd = resolvedAt ?? now;
   const widths = activityWidths(affectedAt, resolvedAt, now);
   const stageClass = resolved ? "resolved" : maintenance ? "maintenance" : "active";
+  const url = absoluteUrl(`/incidents/${incident.id}`);
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": url,
+        url,
+        name: incident.title,
+        description: latestMessage,
+        datePublished: incident.createdAt.toISOString(),
+        dateModified: incident.updatedAt.toISOString(),
+        inLanguage: "id-ID",
+        isPartOf: { "@type": "WebSite", name: siteName, url: absoluteUrl("/") },
+        breadcrumb: { "@id": `${url}#breadcrumb` },
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": `${url}#breadcrumb`,
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: siteName, item: absoluteUrl("/") },
+          { "@type": "ListItem", position: 2, name: "Riwayat pembaruan", item: absoluteUrl("/history") },
+          { "@type": "ListItem", position: 3, name: incident.title, item: url },
+        ],
+      },
+    ],
+  };
 
   return <main className="site-width reference-incident-page">
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
     <nav className="reference-breadcrumb" aria-label="Jejak halaman"><Link href="/">Bapenda Garut</Link><span>/</span><Link href="/history">Riwayat</Link><span>/</span><span>{incident.title}</span></nav>
 
     <section className={`incident-summary incident-summary-${stageClass}`} aria-labelledby="incident-title">

@@ -13,6 +13,12 @@ The page shows the latest status for each service and history ranges from 30 min
 
 `DATABASE_URL` is the pooled Neon URL used by the app. `DATABASE_URL_UNPOOLED` is the direct URL used for migrations. Keep both out of Git. The `@shadcn/lint` plugin is registered in `eslint.config.mjs`.
 
+## Search and link previews
+
+`lib/seo.ts` defines the production origin used by canonical URLs, social previews, structured data, and the sitemap. Update it if the production domain changes. The homepage canonical consolidates history-range variants; history pagination and period archives each retain their own canonical URL. Incident titles and descriptions use the published incident and latest update, with data shared between metadata and page rendering for each request.
+
+`/sitemap.xml` lists the homepage, history, and all published incidents with their actual update timestamps. `/robots.txt` advertises the sitemap and excludes API routes from crawling. Admin and check-detail pages have `noindex` metadata and remain crawlable so search engines can read that rule. Vercel preview deployments disallow crawling and have `noindex` metadata. `/opengraph-image` provides the shared social image, and public pages advertise the RSS feed. After deployment, submit the production sitemap in Google Search Console.
+
 ## Monitoring and updates
 
 The GitHub Actions workflow calls `POST /api/check` on a five-minute schedule. Configure `MONITOR_TOKEN` as both a GitHub Actions repository secret and a Vercel environment variable, and set the `STATUS_URL` repository variable to the Vercel production URL. Vercel Cron calls `GET /api/check` through 96 daily jobs as a backup; set `CRON_SECRET` in Vercel production environment variables. A request checks all four public services and the SAPADA integrations concurrently, records each result in Neon, and returns the results as JSON. The workflow can also be triggered manually.

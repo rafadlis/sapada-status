@@ -7,11 +7,40 @@ import { PageLoading } from "@/components/page-loading";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
 import { getIncidentHistory } from "@/lib/incident-history";
 import { formatJakarta } from "@/lib/status";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Riwayat pembaruan | Status Bapenda Garut" };
 const pageSize = 30;
 
 type HistoryProps = { searchParams: Promise<{ page?: string; period?: string }> };
+
+function historyQuery(params: Awaited<HistoryProps["searchParams"]>) {
+  const requestedPage = Number(params.page ?? "1");
+  const requestedPeriod = Number(params.period ?? "0");
+  const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 && requestedPage <= 100 ? requestedPage : 1;
+  const period = Number.isSafeInteger(requestedPeriod) && requestedPeriod >= 0 && requestedPeriod <= 30 ? requestedPeriod : 0;
+  return { page, period };
+}
+
+function historyPeriod(period: number) {
+  const jakartaNow = new Date(new Date().getTime() + 7 * 60 * 60 * 1000);
+  const year = jakartaNow.getUTCFullYear();
+  const month = jakartaNow.getUTCMonth();
+  const from = new Date(Date.UTC(year, month - 3 - period * 4, 1, -7));
+  const to = new Date(Date.UTC(year, month + 1 - period * 4, 1, -7));
+  const periodLabel = `${formatJakarta(from, { month: "short", year: "numeric" })} – ${formatJakarta(new Date(to.getTime() - 1), { month: "short", year: "numeric" })}`;
+  return { from, to, periodLabel };
+}
+
+export async function generateMetadata({ searchParams }: HistoryProps): Promise<Metadata> {
+  const { page, period } = historyQuery(await searchParams);
+  const query = new URLSearchParams();
+  if (period > 0) query.set("period", String(period));
+  if (page > 1) query.set("page", String(page));
+  const path = query.size ? `/history?${query}` : "/history";
+  const { periodLabel } = historyPeriod(period);
+  const title = `Riwayat pembaruan${period > 0 ? ` ${periodLabel}` : ""}${page > 1 ? `, halaman ${page}` : ""}`;
+  return pageMetadata(title, `Riwayat gangguan dan pemeliharaan layanan Bapenda Garut pada ${periodLabel}. Baca kronologi SAPADA, Struk Berhadiah, Simpul PAD, dan situs Bapenda.`, path);
+}
 
 export default function HistoryPage({ searchParams }: HistoryProps) {
   return <div className="status-site reference-site"><SiteHeader />
@@ -21,17 +50,8 @@ export default function HistoryPage({ searchParams }: HistoryProps) {
 
 async function HistoryContent({ searchParams }: HistoryProps) {
   await connection();
-  const params = await searchParams;
-  const requestedPage = Number(params.page ?? "1");
-  const requestedPeriod = Number(params.period ?? "0");
-  const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 && requestedPage <= 100 ? requestedPage : 1;
-  const period = Number.isSafeInteger(requestedPeriod) && requestedPeriod >= 0 && requestedPeriod <= 30 ? requestedPeriod : 0;
-  const jakartaNow = new Date(new Date().getTime() + 7 * 60 * 60 * 1000);
-  const year = jakartaNow.getUTCFullYear();
-  const month = jakartaNow.getUTCMonth();
-  const from = new Date(Date.UTC(year, month - 3 - period * 4, 1, -7));
-  const to = new Date(Date.UTC(year, month + 1 - period * 4, 1, -7));
-  const periodLabel = `${formatJakarta(from, { month: "short", year: "numeric" })} – ${formatJakarta(new Date(to.getTime() - 1), { month: "short", year: "numeric" })}`;
+  const { page, period } = historyQuery(await searchParams);
+  const { from, to, periodLabel } = historyPeriod(period);
   let rows: Awaited<ReturnType<typeof getIncidentHistory>>["rows"] = [];
   let updates: Awaited<ReturnType<typeof getIncidentHistory>>["updates"] = [];
   let unavailable = false;

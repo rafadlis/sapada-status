@@ -14,7 +14,8 @@ import { getService, services } from "@/lib/services";
 import { components, getComponent } from "@/lib/components";
 
 export const metadata: Metadata = {
-  title: "Detail pemeriksaan | Status Bapenda Garut",
+  title: "Detail pemeriksaan",
+  description: "Hasil pemeriksaan ketersediaan layanan Bapenda Garut beserta waktu, respons, dan detail gangguan.",
   robots: { index: false, follow: false },
 };
 

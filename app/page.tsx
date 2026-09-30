@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -9,11 +10,33 @@ import { PageLoading } from "@/components/page-loading";
 import { getHistoryRange } from "@/lib/history-range";
 import { incidentAffectsService } from "@/lib/incident-service";
 import { getStatusData } from "@/lib/status";
+import { absoluteUrl, pageMetadata, serializeJsonLd, siteDescription, siteName } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  ...pageMetadata(siteName, siteDescription, "/"),
+  title: { absolute: siteName },
+};
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: siteName,
+  url: absoluteUrl("/"),
+  description: siteDescription,
+  inLanguage: "id-ID",
+  publisher: {
+    "@type": "GovernmentOrganization",
+    name: "Badan Pendapatan Daerah Kabupaten Garut",
+    url: "https://bapenda.garutkab.go.id/",
+    logo: absoluteUrl("/bapenda-mark.png"),
+  },
+};
 
 type HomeProps = { searchParams: Promise<{ range?: string | string[] }> };
 
 export default function Home({ searchParams }: HomeProps) {
   return <div className="status-site reference-site"><AutoRefresh /><SiteHeader />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteJsonLd) }} />
     <Suspense fallback={<PageLoading page="home" />}><SelectedRangeStatus searchParams={searchParams} /></Suspense>
     <SiteFooter /></div>;
 }
@@ -47,6 +70,6 @@ async function LiveStatus({ range }: { range: ReturnType<typeof getHistoryRange>
     <div className="reference-history-action"><Link href="/history">Lihat riwayat pembaruan</Link></div>
 
     {active.length > 0 && <section className="reference-updates" aria-labelledby="updates-title"><div className="reference-updates-heading"><h2 id="updates-title">Pembaruan terkini</h2><Link href="/history">Semua riwayat</Link></div><div>{active.map((incident) => <IncidentRow incident={incident} key={incident.id} />)}</div></section>}
-    <p className="reference-disclaimer">Pemeriksaan dijadwalkan setiap lima menit. Status menjadi belum diketahui jika tidak ada hasil baru selama 20 menit.</p>
+    <p className="reference-disclaimer">Halaman ini memantau ketersediaan SAPADA, Struk Berhadiah, Simpul PAD, dan situs Bapenda Kabupaten Garut. Pemeriksaan dijadwalkan setiap lima menit. Status menjadi belum diketahui jika tidak ada hasil baru selama 20 menit.</p>
   </main>;
 }
