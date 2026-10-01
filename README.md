@@ -58,7 +58,10 @@ On the current Vercel Hobby plan, each Cron job runs once per day with timing pr
 `GET /api/status` is the public version 1 JSON feed for SAPADA's in-app notices.
 It returns the combined SAPADA state, the five component states and check times,
 and all active incidents targeting SAPADA or all services. Incident messages use
-the latest public update. Resolved events and incidents for other services are
+the latest public update belonging to that incident, ordered by update time and
+then update ID. The query builder preserves the outer incident ID in the
+correlated subquery; inline SQL in a single-table projection can lose table
+qualifiers and select an unrelated incident's message. Resolved events and incidents for other services are
 excluded. Queries read only the latest check per component and active incidents,
 without history aggregation or a recent-event limit that could hide an older
 active incident.
@@ -70,9 +73,9 @@ results expire after 20 minutes, matching the public page. No new secret or
 migration is required. SAPADA proxies the feed on its server, so browser CORS is
 not required. Deploy this endpoint before SAPADA's notice integration.
 
-Focused checks are `node --import tsx --test lib/status-feed.test.ts`,
-`node node_modules/typescript/bin/tsc --noEmit -p tsconfig.status-feed.json`, and
-`bun run lint -- app/api/status/route.ts lib/status-feed.ts lib/status-feed.test.ts`.
+Focused checks are `bun run test:status-feed`,
+`node node_modules/typescript/bin/tsc --noEmit -p tsconfig.incident-message-check.json`, and
+`bun run lint -- app/api/status/route.ts lib/status-feed-query.ts lib/status-feed-query.test.ts`.
 
 ## Domain
 
