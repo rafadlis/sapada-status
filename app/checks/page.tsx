@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import Link from "next/link";
-import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
 import { PageLoading } from "@/components/page-loading";
 import { formatCheckResult } from "@/lib/check-result";
@@ -58,11 +58,8 @@ async function ChecksContent({ searchParams }: ChecksProps) {
     try {
       const db = getDb();
       const sapadaKeys = [services[0].key, ...components.map((component) => component.key)];
-      const completeRuns = db.select({ checkedAt: checks.checkedAt }).from(checks)
-        .where(and(inArray(checks.serviceKey, sapadaKeys), gte(checks.checkedAt, new Date(from)), lt(checks.checkedAt, new Date(to))))
-        .groupBy(checks.checkedAt).having(sql`count(distinct ${checks.serviceKey}) = ${sapadaKeys.length}`);
       const result = await db.select().from(checks)
-        .where(and(overall ? and(inArray(checks.serviceKey, sapadaKeys), inArray(checks.checkedAt, completeRuns)) : eq(checks.serviceKey, service.key), gte(checks.checkedAt, new Date(from)), lt(checks.checkedAt, new Date(to))))
+        .where(and(overall ? inArray(checks.serviceKey, sapadaKeys) : eq(checks.serviceKey, service.key), gte(checks.checkedAt, new Date(from)), lt(checks.checkedAt, new Date(to))))
         .orderBy(desc(checks.checkedAt), desc(checks.id))
         .limit(pageSize + 1).offset((requestedPage - 1) * pageSize);
       hasNext = result.length > pageSize;

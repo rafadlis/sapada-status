@@ -43,7 +43,7 @@ function ServiceHistoryRow({ service, range, now, afterName }: {
   const name = service.displayName ?? service.service.name;
   const overall = service.isOverall === true;
   const stateLabel = service.state === "operational" ? "Beroperasi" : service.state === "degraded" ? "Terganggu" : "Belum diketahui";
-  const uptimeHint = overall ? "Persentase putaran pemeriksaan lengkap saat seluruh komponen berhasil" : "Persentase pemeriksaan yang berhasil selama rentang terpilih";
+  const uptimeHint = overall ? "Persentase putaran saat semua komponen yang diperiksa berhasil. Riwayat lama dapat mencakup sebagian komponen." : "Persentase pemeriksaan yang berhasil selama rentang terpilih";
 
   return <div className="reference-service" aria-label={`${name}: ${stateLabel}`}>
     <div className="reference-service-head"><div><span className={`reference-service-icon status-${service.state}`} aria-hidden="true">{service.state === "operational" ? "✓" : service.state === "degraded" ? "!" : "?"}</span><strong>{name}</strong>{afterName}
@@ -56,10 +56,11 @@ function ServiceHistoryRow({ service, range, now, afterName }: {
         ? formatJakarta(bucketStart, { dateStyle: "medium" })
         : `${formatJakarta(bucketStart, { dateStyle: "medium", timeStyle: "short" })}–${formatJakarta(bucketEnd, { timeStyle: "short" })} WIB`;
       const bucketState = bucket.count === 0 ? "empty" : bucket.failedCount === 0 ? "good" : bucket.failedCount === bucket.count ? "failed" : "mixed";
-      const subject = overall ? "putaran pemeriksaan lengkap" : "pemeriksaan";
+      const subject = overall ? "putaran pemeriksaan" : "pemeriksaan";
       const summary = bucketState === "empty" ? "Belum ada pemeriksaan" : bucketState === "good" ? `${bucket.count} ${subject} berhasil` : bucketState === "mixed" ? `Sebagian gagal: ${bucket.failedCount} dari ${bucket.count} ${subject} gagal` : `${bucket.count} ${subject} gagal`;
       const failure = bucket.latestFailure;
-      const label = `${name}, ${period}: ${summary}${failure ? `. ${formatCheckResult(failure)}` : ""}`;
+      const coverage = overall && bucket.partialCount ? `${bucket.partialCount} putaran hanya mencakup sebagian komponen` : null;
+      const label = `${name}, ${period}: ${summary}${coverage ? `. ${coverage}` : ""}${failure ? `. ${formatCheckResult(failure)}` : ""}`;
       const barClass = `reference-bar reference-bar-${bucketState}`;
       const trigger = bucket.count > 0
         ? <Link href={`/checks?service=${service.service.key}&from=${bucketStart.getTime()}&to=${Math.min(bucketEnd.getTime(), now.getTime())}&range=${range.key}${overall ? "&view=overall" : ""}`} className={barClass} aria-label={`${label}. Lihat semua pemeriksaan.`} />
@@ -69,6 +70,7 @@ function ServiceHistoryRow({ service, range, now, afterName }: {
         <TooltipContent side="top" className="reference-check-tooltip">
           <strong>{name} · {period}</strong>
           <span>{summary}</span>
+          {coverage && <span>{coverage}</span>}
           {failure && <span>Terakhir gagal: {formatJakarta(failure.checkedAt, { dateStyle: "medium", timeStyle: "medium" })} WIB. {formatCheckResult(failure)}</span>}
           {bucket.count > 0 && <span className="reference-tooltip-action">Klik batang untuk melihat pemeriksaan</span>}
         </TooltipContent>

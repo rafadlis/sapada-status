@@ -21,8 +21,8 @@ describe("SAPADA overall status", () => {
     assert.equal(rollupSapadaStatus(monitor("operational"), [monitor("operational", components[0])], []).state, "operational");
   });
 
-  test("counts complete monitoring runs rather than individual component checks", () => {
-    const history: ServiceHistoryBucket[] = [{ count: 4, failedCount: 1, latestFailure: null }, { count: 0, failedCount: 0, latestFailure: null }];
+  test("includes partial monitoring runs and retains their coverage information", () => {
+    const history: ServiceHistoryBucket[] = [{ count: 4, failedCount: 1, latestFailure: null, partialCount: 3 }, { count: 0, failedCount: 0, latestFailure: null }];
     const result = rollupSapadaStatus(monitor("operational"), [monitor("operational", components[0])], history);
     assert.equal(result.uptime, 75);
     assert.deepEqual(result.history, history);

@@ -11,7 +11,7 @@ type Check = typeof checks.$inferSelect;
 type PublicIncident = typeof incidents.$inferSelect & { updates: (typeof incidentUpdates.$inferSelect)[] };
 type HistoryRange = ReturnType<typeof getHistoryRange>;
 
-export type ServiceHistoryBucket = { count: number; failedCount: number; latestFailure: Check | null };
+export type ServiceHistoryBucket = { count: number; failedCount: number; latestFailure: Check | null; partialCount?: number };
 export type ServiceStatus = {
   service: (typeof services)[number] | (typeof components)[number];
   displayName?: string;
@@ -88,11 +88,12 @@ export async function getStatusData(range: HistoryRange | null = defaultHistoryR
         }[]),
       range ? db.select({
         bucketIndex: runs.bucketIndex,
-        count: sql<number>`count(*) filter (where ${runs.observed} = ${sapadaKeys.length})::integer`,
-        failedCount: sql<number>`count(*) filter (where ${runs.observed} = ${sapadaKeys.length} and ${runs.failed})::integer`,
-        latestFailureId: sql<number | null>`(array_agg(${runs.latestFailureId} order by ${runs.checkedAt} desc) filter (where ${runs.observed} = ${sapadaKeys.length} and ${runs.failed}))[1]`,
+        count: sql<number>`count(*)::integer`,
+        failedCount: sql<number>`count(*) filter (where ${runs.failed})::integer`,
+        partialCount: sql<number>`count(*) filter (where ${runs.observed} < ${sapadaKeys.length})::integer`,
+        latestFailureId: sql<number | null>`(array_agg(${runs.latestFailureId} order by ${runs.checkedAt} desc) filter (where ${runs.failed}))[1]`,
       }).from(runs).groupBy(runs.bucketIndex) : Promise.resolve([] as {
-        bucketIndex: number; count: number; failedCount: number; latestFailureId: number | null;
+        bucketIndex: number; count: number; failedCount: number; partialCount: number; latestFailureId: number | null;
       }[]),
       db.select().from(incidents).orderBy(desc(incidents.createdAt)).limit(30),
     ]);
@@ -123,6 +124,7 @@ export async function getStatusData(range: HistoryRange | null = defaultHistoryR
     for (const row of overallRows) {
       if (row.bucketIndex < 0 || row.bucketIndex >= overallHistory.length) continue;
       overallHistory[row.bucketIndex] = { count: row.count, failedCount: row.failedCount,
+        partialCount: row.partialCount,
         latestFailure: row.latestFailureId === null ? null : failureById.get(row.latestFailureId) ?? null };
     }
     const grouped = groupMonitors(monitorStatuses, overallHistory);
