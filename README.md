@@ -53,6 +53,27 @@ Open `/admin` and sign in with `ADMIN_PASSWORD` to publish a disruption or plann
 
 On the current Vercel Hobby plan, each Cron job runs once per day with timing precision of roughly one hour. The 96 daily jobs add backup checks but cannot guarantee a precise 15-minute interval. GitHub Actions remains the five-minute scheduler; its scheduled runs can be late or skipped under load, and GitHub may disable them in an inactive public repository. The public page marks monitoring as unknown when results stop arriving. The status site and Neon must be reachable for checks to be saved.
 
+## SAPADA in-app notices
+
+`GET /api/status` is the public version 1 JSON feed for SAPADA's in-app notices.
+It returns the combined SAPADA state, the five component states and check times,
+and all active incidents targeting SAPADA or all services. Incident messages use
+the latest public update. Resolved events and incidents for other services are
+excluded. Queries read only the latest check per component and active incidents,
+without history aggregation or a recent-event limit that could hide an older
+active incident.
+
+The response excludes provider URLs, probe errors, credentials and recipient
+data. Its CDN cache lasts 30 seconds, with no stale response window. Failed data
+reads return HTTP 503 and an unavailable/unknown snapshot with no caching. Monitor
+results expire after 20 minutes, matching the public page. No new secret or
+migration is required. SAPADA proxies the feed on its server, so browser CORS is
+not required. Deploy this endpoint before SAPADA's notice integration.
+
+Focused checks are `node --import tsx --test lib/status-feed.test.ts`,
+`node node_modules/typescript/bin/tsc --noEmit -p tsconfig.status-feed.json`, and
+`bun run lint -- app/api/status/route.ts lib/status-feed.ts lib/status-feed.test.ts`.
+
 ## Domain
 
 `status.bapenda.garutkab.go.id` is attached to the Vercel project and serves the status page over HTTPS. Cloudflare has a DNS-only A record named `status.bapenda` in the `garutkab.go.id` zone pointing to `76.76.21.21`. Public resolvers return that address. Vercel now recommends a project-specific CNAME, while its domain settings say the legacy A record continues to work. The app is also available at `sapada-status.vercel.app`.
