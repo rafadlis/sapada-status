@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "incremental": false },
+  "files": [
+    "lib/automatic-incidents.ts", "lib/automatic-incidents.test.ts",
+    "app/api/check/route.ts", "app/api/admin/incidents/[id]/route.ts",
+    "components/admin-incident-dialog.tsx", "app/admin/page.tsx"
+  ],
+  "include": []
+}

@@ -4,6 +4,9 @@ import { checkTimeoutMs } from "@/lib/check-result";
 import { services } from "@/lib/services";
 import { runComponentChecks } from "@/lib/component-checks";
 import { processWhatsappAlerts } from "@/lib/whatsapp-alerts";
+import { processAutomaticIncidents } from "@/lib/automatic-incidents";
+import { revalidateTag } from "next/cache";
+import { incidentHistoryTag } from "@/lib/incident-history";
 
 function authorized(request: Request, secret: string | undefined) {
   return Boolean(secret && request.headers.get("authorization") === `Bearer ${secret}`);
@@ -45,17 +48,25 @@ async function runCheck() {
     return { serviceKey: service.key, ok, statusCode, latencyMs: Math.round(performance.now() - started), error };
   })), runComponentChecks()]);
   const results = [...serviceResults, ...componentResults];
+  const checkedAt = new Date();
   try {
-    await getDb().insert(checks).values(results);
+    await getDb().insert(checks).values(results.map((result) => ({ ...result, checkedAt })));
   } catch (cause) {
     console.error("Failed to save health check", cause);
     return Response.json({ error: "Failed to save health check" }, { status: 500 });
   }
-  try {
-    const alerts = await processWhatsappAlerts(results);
-    return Response.json({ results, alerts }, { headers: { "cache-control": "no-store" } });
-  } catch (cause) {
-    console.error("Failed to process WhatsApp alerts", cause);
-    return Response.json({ error: "Health checks saved, but WhatsApp alerts could not be processed" }, { status: 503 });
+  const [incidentResult, alertResult] = await Promise.allSettled([
+    processAutomaticIncidents(results, checkedAt), processWhatsappAlerts(results),
+  ]);
+  if (incidentResult.status === "fulfilled" && incidentResult.value.updates > 0) {
+    revalidateTag(incidentHistoryTag, { expire: 0 });
   }
+  for (const result of [incidentResult, alertResult]) {
+    if (result.status === "rejected") console.error("Failed to process monitor automation", result.reason);
+  }
+  return Response.json({ results,
+    incidents: incidentResult.status === "fulfilled" ? incidentResult.value : { error: "Incident processing failed" },
+    alerts: alertResult.status === "fulfilled" ? alertResult.value : { error: "Alert processing failed" },
+  }, { status: incidentResult.status === "rejected" || alertResult.status === "rejected" ? 503 : 200,
+    headers: { "cache-control": "no-store" } });
 }

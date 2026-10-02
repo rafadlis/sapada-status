@@ -17,3 +17,6 @@ The historical parent chart includes every recorded monitoring run, even when ol
 
 **Informasi layanan**:
 A public report of a disruption or planned maintenance with one update timeline. It can concern one layanan or all monitored layanan. A SAPADA report identifies the affected components; older reports without that selection refer to SAPADA as a whole.
+
+**Gangguan otomatis**:
+A public report created by `/api/check` after at least three failures spanning ten minutes for an individual monitor. A healthy check or a gap over ten minutes resets failure confirmation. SAPADA component failures join one open automatic report. Covered manual reports suppress duplicates. Admins must replace the default title, confirm the cause, and close the report. A component can generate another report after ten minutes of observed recovery and a new confirmed failure. WhatsApp sending uses its separate confirmation and rate limits.

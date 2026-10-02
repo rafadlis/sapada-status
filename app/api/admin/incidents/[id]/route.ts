@@ -16,21 +16,26 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const form = await request.formData();
   const state = String(form.get("state") ?? "");
   const message = String(form.get("message") ?? "").trim();
+  const title = String(form.get("title") ?? "").trim();
   const db = getDb();
   const [incident] = await db.select().from(incidents).where(eq(incidents.id, incidentId)).limit(1);
   if (!incident) return new Response("Incident not found", { status: 404 });
   const affectedComponentKeys = parseAffectedComponentKeys(incident.serviceKey, form.getAll("componentKeys"));
+  const coverageChanged = JSON.stringify(affectedComponentKeys?.toSorted() ?? null)
+    !== JSON.stringify(incident.affectedComponentKeys?.toSorted() ?? null);
   if (!isValidIncidentState(incident.kind === "maintenance" ? "maintenance" : "incident", state)
-    || !message || message.length > 2000 || affectedComponentKeys === undefined) {
+    || !title || title.length > 120 || (incident.titleReviewRequired && title === incident.title)
+    || message.length > 2000 || affectedComponentKeys === undefined
+    || (!message && (state !== incident.state || coverageChanged))) {
     return Response.redirect(new URL("/admin?error=validation", request.url), 303);
   }
   const updatedAt = new Date();
   await db.execute(sql`WITH changed AS (
-    UPDATE incidents SET state = ${state}, affected_component_keys = ${JSON.stringify(affectedComponentKeys)}::jsonb,
-      updated_at = ${updatedAt}, resolved_at = ${state === "resolved" ? updatedAt : null}
+    UPDATE incidents SET state = ${state}, title = ${title}, title_review_required = false, affected_component_keys = ${JSON.stringify(affectedComponentKeys)}::jsonb,
+      updated_at = ${updatedAt}, resolved_at = ${state === "resolved" ? incident.resolvedAt ?? updatedAt : null}
     WHERE id = ${incidentId} RETURNING id
   ) INSERT INTO incident_updates (incident_id, state, message, created_at)
-    SELECT id, ${state}, ${message}, ${updatedAt} FROM changed`);
+    SELECT id, ${state}, ${message}, ${updatedAt} FROM changed WHERE ${message} <> ''`);
   revalidateTag(incidentHistoryTag, { expire: 0 });
   return Response.redirect(new URL("/admin?updated=1", request.url), 303);
 }

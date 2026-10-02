@@ -21,6 +21,19 @@ export const incidents = pgTable("incidents", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  automatic: boolean("automatic").notNull().default(false),
+  titleReviewRequired: boolean("title_review_required").notNull().default(false),
+});
+
+export const monitorIncidentStates = pgTable("monitor_incident_states", {
+  serviceKey: text("service_key").primaryKey(),
+  ok: boolean("ok").notNull(),
+  checkedAt: timestamp("checked_at", { withTimezone: true }).notNull(),
+  failedSince: timestamp("failed_since", { withTimezone: true }),
+  healthySince: timestamp("healthy_since", { withTimezone: true }),
+  failureCount: integer("failure_count").notNull().default(0),
+  countedAt: timestamp("counted_at", { withTimezone: true }).notNull(),
+  incidentId: integer("incident_id").references(() => incidents.id),
 });
 
 export const incidentUpdates = pgTable("incident_updates", {

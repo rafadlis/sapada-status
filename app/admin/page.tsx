@@ -49,7 +49,7 @@ async function AdminContent({ searchParams }: AdminProps) {
   return <main className="site-width subpage-main admin-main">
     <span className="eyebrow">PENGELOLA BAPENDA</span><h1>{authorized ? "Kelola pembaruan" : "Masuk sebagai pengelola"}</h1>
     {params.error === "login" && !authorized && <p className="form-feedback form-error" role="alert">Kata sandi tidak sesuai. Coba lagi.</p>}
-    {params.error === "validation" && authorized && <p className="form-feedback form-error" role="alert">Pilih layanan dan komponen terdampak, lalu lengkapi judul serta catatan publik sesuai batas karakter.</p>}
+    {params.error === "validation" && authorized && <p className="form-feedback form-error" role="alert">Lengkapi judul dan komponen terdampak. Ganti judul otomatis dengan ringkasan yang sudah diperiksa. Perubahan tahap atau dampak harus disertai catatan publik.</p>}
     {(params.created === "1" || params.updated === "1") && authorized && <p className="form-feedback form-success" role="status">Pembaruan telah diterbitkan.</p>}
     {params.error === "recipient" && authorized && <p className="form-feedback form-error" role="alert">Masukkan satu nomor WhatsApp yang valid dan nama maksimal 80 karakter.</p>}
     {params.error === "recipient-duplicate" && authorized && <p className="form-feedback form-error" role="alert">Nomor tersebut sudah terdaftar atau penerima tidak ditemukan.</p>}
@@ -59,7 +59,7 @@ async function AdminContent({ searchParams }: AdminProps) {
       <label htmlFor="password">Kata sandi</label><input id="password" name="password" type="password" autoComplete="current-password" required />
       <button type="submit">Masuk</button>
     </form> : <>
-      <p className="page-description">Beri konteks saat pemantauan mendeteksi gangguan. Setiap perubahan tahap disertai catatan yang muncul dalam kronologi publik.</p>
+      <p className="page-description">Gangguan dikirim ke riwayat otomatis setelah sedikitnya tiga pemeriksaan gagal selama 10 menit. Periksa informasi tersebut dan ganti judul otomatis. Pemulihan serta penyebab tetap dikonfirmasi oleh pengelola.</p>
       <div className="admin-monitor-list">{data?.services.map((service) => <div className="admin-monitor" key={service.service.key}>
         <div><span className={`service-dot dot-${service.state}`} /><strong>{service.service.name}: {service.state === "operational" ? "dapat diakses" : service.state === "degraded" ? "pemeriksaan gagal" : "status belum diketahui"}</strong></div>
         <span>{service.latest ? `Pemeriksaan ${formatJakarta(service.latest.checkedAt, { dateStyle: "medium", timeStyle: "medium" })} WIB` : "Belum ada pemeriksaan"}</span>
@@ -84,10 +84,10 @@ async function AdminContent({ searchParams }: AdminProps) {
             <TableHead>Informasi</TableHead><TableHead>Tahap</TableHead><TableHead>Diperbarui</TableHead><TableHead className="text-right">Aksi</TableHead>
           </TableRow></TableHeader>
           <TableBody>{data.incidents.map((incident) => <TableRow key={incident.id}>
-            <TableCell className="admin-table-title"><strong>{incident.title}</strong><span>{incidentServiceLabel(incident.serviceKey)} · {kindLabel(incident.kind)}</span>{incident.affectedComponentKeys && <span>{affectedComponentNames(incident.affectedComponentKeys).join(" · ")}</span>}</TableCell>
+            <TableCell className="admin-table-title"><strong>{incident.title}</strong>{incident.titleReviewRequired && <span className="admin-stage">Otomatis · judul perlu diperbarui</span>}<span>{incidentServiceLabel(incident.serviceKey)} · {kindLabel(incident.kind)}</span>{incident.affectedComponentKeys && <span>{affectedComponentNames(incident.affectedComponentKeys).join(" · ")}</span>}</TableCell>
             <TableCell><span className="admin-stage">{stateLabel(incident.state)}</span></TableCell>
             <TableCell className="admin-table-date">{formatJakarta(incident.updatedAt, { dateStyle: "medium", timeStyle: "short" })} WIB</TableCell>
-            <TableCell><div className="admin-row-actions"><Link href={`/incidents/${incident.id}`} aria-label={`Lihat ${incident.title} di halaman publik`}>Lihat publik</Link><AdminIncidentDialog id={incident.id} title={incident.title} kind={incident.kind} state={incident.state} serviceKey={incident.serviceKey} affectedComponentKeys={incident.affectedComponentKeys} /></div></TableCell>
+            <TableCell><div className="admin-row-actions"><Link href={`/incidents/${incident.id}`} aria-label={`Lihat ${incident.title} di halaman publik`}>Lihat publik</Link><AdminIncidentDialog id={incident.id} title={incident.title} kind={incident.kind} state={incident.state} serviceKey={incident.serviceKey} affectedComponentKeys={incident.affectedComponentKeys} titleReviewRequired={incident.titleReviewRequired} /></div></TableCell>
           </TableRow>)}</TableBody>
         </Table> : <p className="admin-empty">Belum ada informasi yang diterbitkan.</p>}</CardContent>
       </Card></section>
