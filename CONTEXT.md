@@ -15,6 +15,8 @@ The combined health of the SAPADA website and all its monitored integrations. It
 
 The historical parent chart includes every recorded monitoring run, even when older runs only checked the website. A run fails if any observed component fails. Missing components do not remove a run from history. Tooltips identify runs that cover only some components; historical percentages describe the components observed at that time.
 
+History bar colors summarize the success rate within each bucket. Green means at least 99% of observed checks succeeded, yellow means some succeeded but the rate is below 99%, red means every recorded check failed, and gray means no observations. Tooltips retain exact failure counts even on green bars. This visual threshold does not change the recorded checks, uptime calculation, current status, incident confirmation, or WhatsApp alert policy.
+
 **Informasi layanan**:
 A public report of a disruption or planned maintenance with one update timeline. It can concern one layanan or all monitored layanan. A SAPADA report identifies the affected components; older reports without that selection refer to SAPADA as a whole.
 

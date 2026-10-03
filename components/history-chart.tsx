@@ -7,6 +7,7 @@ import { formatCheckResult } from "@/lib/check-result";
 import { getHistoryRange, getHistoryWindow } from "@/lib/history-range";
 import { formatJakarta, type ServiceStatus } from "@/lib/status";
 import { getService } from "@/lib/services";
+import { getHistoryBarState, getHistoryBarSummary, historyBarLegend } from "@/lib/history-bar-policy";
 
 export function HistoryChart({ services, components, selectedRange, now }: {
   services: ServiceStatus[];
@@ -17,7 +18,7 @@ export function HistoryChart({ services, components, selectedRange, now }: {
   const range = getHistoryRange(selectedRange);
   return <section className="reference-system-card" aria-labelledby="system-status-title">
     <div className="reference-system-head"><h2 id="system-status-title">Status sistem</h2><HistoryRangeMenu key={range.key} selectedRange={range.key} /></div>
-    <div className="reference-service-legend"><div className="reference-legend" aria-label="Legenda pemeriksaan"><span><i className="reference-bar-good" aria-hidden="true" />Berhasil</span><span><i className="reference-bar-mixed" aria-hidden="true" />Sebagian gagal</span><span><i className="reference-bar-failed" aria-hidden="true" />Gagal</span><span><i className="reference-bar-empty" aria-hidden="true" />Belum diperiksa</span></div></div>
+    <div className="reference-service-legend"><div className="reference-legend" aria-label="Legenda pemeriksaan">{historyBarLegend.map((item) => <span key={item.state}><i className={`reference-bar-${item.state}`} aria-hidden="true" />{item.label}</span>)}</div></div>
     {services.map((service) => service.service.key === "sapada"
       ? <ComponentDisclosure key={service.service.key}>
         <ServiceHistoryRow service={service} range={range} now={now} afterName={<ComponentDisclosureToggle count={components.length} />} />
@@ -55,9 +56,8 @@ function ServiceHistoryRow({ service, range, now, afterName }: {
       const period = range.bucketLabel === "1 hari"
         ? formatJakarta(bucketStart, { dateStyle: "medium" })
         : `${formatJakarta(bucketStart, { dateStyle: "medium", timeStyle: "short" })}–${formatJakarta(bucketEnd, { timeStyle: "short" })} WIB`;
-      const bucketState = bucket.count === 0 ? "empty" : bucket.failedCount === 0 ? "good" : bucket.failedCount === bucket.count ? "failed" : "mixed";
-      const subject = overall ? "putaran pemeriksaan" : "pemeriksaan";
-      const summary = bucketState === "empty" ? "Belum ada pemeriksaan" : bucketState === "good" ? `${bucket.count} ${subject} berhasil` : bucketState === "mixed" ? `Sebagian gagal: ${bucket.failedCount} dari ${bucket.count} ${subject} gagal` : `${bucket.count} ${subject} gagal`;
+      const bucketState = getHistoryBarState(bucket);
+      const summary = getHistoryBarSummary(bucket, overall);
       const failure = bucket.latestFailure;
       const coverage = overall && bucket.partialCount ? `${bucket.partialCount} putaran hanya mencakup sebagian komponen` : null;
       const label = `${name}, ${period}: ${summary}${coverage ? `. ${coverage}` : ""}${failure ? `. ${formatCheckResult(failure)}` : ""}`;
