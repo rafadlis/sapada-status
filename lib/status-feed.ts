@@ -1,4 +1,4 @@
-import { components, legacyPaymentComponent, paymentComponentKeys } from "./components";
+import { components, legacyPaymentComponent, legacyQrisComponent, monitoredPaymentComponentKeys, paymentComponentKeys, skippedComponentKeys } from "./components";
 import { isIncidentKind, isValidIncidentState } from "./incident";
 
 const monitorKeys = ["sapada", ...components.map((item) => item.key)];
@@ -19,8 +19,10 @@ export function buildStatusFeed(
   incidents: PublicIncident[],
   now = new Date(),
   available = true,
+  version: 1 | 2 = 1,
 ) {
   const monitors = monitorKeys.map((key) => {
+    if (skippedComponentKeys.includes(key)) return { key, state: "skipped", checkedAt: null };
     const latest = available
       ? checks.find((item) => item.serviceKey === key)
       : undefined;
@@ -39,7 +41,7 @@ export function buildStatusFeed(
       : "operational";
   // SAPADA's version 1 reader requires exactly five keys. Aggregate only here;
   // the status page, stored checks and automation use the independent monitors.
-  const payments = monitors.filter((item) => (paymentComponentKeys as readonly string[]).includes(item.key));
+  const payments = monitors.filter((item) => (monitoredPaymentComponentKeys as readonly string[]).includes(item.key));
   const paymentDates = payments.flatMap((item) => item.checkedAt ? [item.checkedAt] : []);
   const failedDates = payments.flatMap((item) => item.state === "degraded" && item.checkedAt ? [item.checkedAt] : []);
   const payment = {
@@ -49,25 +51,29 @@ export function buildStatusFeed(
     checkedAt: failedDates.length ? failedDates.sort()[0]
       : paymentDates.length === payments.length ? paymentDates.sort()[0] : null,
   };
-  const publicMonitors = [monitors[0], monitors[1], monitors[2], payment, monitors[6]];
-  const dates = monitors.flatMap((item) =>
+  const publicMonitors = [monitors[0], monitors[1], monitors[2], payment, monitors[7]];
+  const activeMonitors = monitors.filter((item) => item.state !== "skipped");
+  const dates = activeMonitors.flatMap((item) =>
     item.checkedAt ? [item.checkedAt] : [],
   );
   return {
-    version: 1,
+    version,
     available,
     generatedAt: now.toISOString(),
     service: {
       state,
-      checkedAt: dates.length === monitorKeys.length ? dates.sort()[0] : null,
+      checkedAt: dates.length === activeMonitors.length ? dates.sort()[0] : null,
     },
     components: publicMonitors,
-    paymentMethods: payments,
+    paymentMethods: version === 2
+      ? monitors.filter((item) => (paymentComponentKeys as readonly string[]).includes(item.key))
+      : payments.map((item) => ({ ...item, key: item.key === "sapada-qris-generate" ? legacyQrisComponent.key : item.key })),
     incidents: available
       ? incidents
           .filter(
             (item) =>
               item.state !== "resolved" &&
+              (version === 2 || !item.affectedComponentKeys?.length || !item.affectedComponentKeys.every((key) => skippedComponentKeys.includes(key))) &&
               isIncidentKind(item.kind) &&
               isValidIncidentState(item.kind, item.state),
           )
@@ -79,13 +85,15 @@ export function buildStatusFeed(
             state: item.state,
             updatedAt: item.updatedAt.toISOString(),
             affectedComponentKeys: item.affectedComponentKeys === null ? null
-              : [...new Set(item.affectedComponentKeys.map((key) =>
-                (paymentComponentKeys as readonly string[]).includes(key) ? legacyPaymentComponent.key : key))],
+              : [...new Set(item.affectedComponentKeys.filter((key) => version === 2 || !skippedComponentKeys.includes(key)).map((key) =>
+                key === legacyQrisComponent.key || (paymentComponentKeys as readonly string[]).includes(key) ? legacyPaymentComponent.key : key))],
             // A broad payment or whole-service incident must keep its broad scope.
             affectedPaymentMethodKeys: item.affectedComponentKeys === null ||
               item.affectedComponentKeys.includes(legacyPaymentComponent.key) ? null
               : [...new Set(item.affectedComponentKeys.filter((key) =>
-                (paymentComponentKeys as readonly string[]).includes(key)))],
+                key === legacyQrisComponent.key || (paymentComponentKeys as readonly string[]).includes(key))
+                .map((key) => version === 1 && key === "sapada-qris-generate" ? legacyQrisComponent.key : key)
+                .filter((key) => version === 2 || !skippedComponentKeys.includes(key)))],
           }))
       : [],
   };

@@ -10,6 +10,13 @@ function monitor(state: PublicStatus, component?: (typeof components)[number]): 
 }
 
 describe("SAPADA overall status", () => {
+  test("skipped status checks cannot degrade the service or change uptime", () => {
+    const skipped: ServiceStatus = { ...monitor("unknown", components[3]), state: "skipped" };
+    const result = rollupSapadaStatus(monitor("operational"), [monitor("operational", components[2]), skipped],
+      [{ count: 2, failedCount: 0, latestFailure: null }]);
+    assert.equal(result.state, "operational");
+    assert.equal(result.uptime, 100);
+  });
   test("fails when any component fails, even if the website succeeds", () => {
     const result = rollupSapadaStatus(monitor("operational"), [monitor("degraded", components[0]), monitor("operational", components[1])], []);
     assert.equal(result.state, "degraded");

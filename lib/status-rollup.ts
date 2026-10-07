@@ -1,7 +1,7 @@
 import type { ServiceStatus, ServiceHistoryBucket, PublicStatus } from "./status";
 
 export function rollupSapadaStatus(site: ServiceStatus, components: ServiceStatus[], history: ServiceHistoryBucket[]): ServiceStatus {
-  const monitors = [site, ...components];
+  const monitors = [site, ...components].filter((monitor) => monitor.state !== "skipped");
   const state: PublicStatus = monitors.some((monitor) => monitor.state === "degraded") ? "degraded"
     : monitors.some((monitor) => monitor.state === "unknown") ? "unknown" : "operational";
   const total = history.reduce((sum, bucket) => sum + bucket.count, 0);

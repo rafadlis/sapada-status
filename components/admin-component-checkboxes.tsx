@@ -2,11 +2,11 @@
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { sapadaIncidentComponents } from "@/lib/incident-components";
-import { legacyPaymentComponent } from "@/lib/components";
+import { legacyPaymentComponent, legacyQrisComponent } from "@/lib/components";
 
 export function AdminComponentCheckboxes({ defaultSelected = [] }: { defaultSelected?: string[] }) {
-  const options = defaultSelected.includes(legacyPaymentComponent.key)
-    ? [...sapadaIncidentComponents, legacyPaymentComponent] : sapadaIncidentComponents;
+  const options = [...sapadaIncidentComponents,
+    ...[legacyPaymentComponent, legacyQrisComponent].filter((component) => defaultSelected.includes(component.key))];
   return <fieldset className="admin-component-fieldset">
     <legend>Komponen terdampak</legend>
     <p>Pilih komponen SAPADA yang mengalami gangguan atau pemeliharaan.</p>

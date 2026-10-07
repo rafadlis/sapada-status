@@ -13,7 +13,7 @@ const healthy = () =>
 test("version 1 feed keeps five monitors and rolls up independent payment failures", () => {
   const checks = healthy();
   assert.equal(buildStatusFeed(checks, [], now).service.state, "operational");
-  checks.find((item) => item.serviceKey === "sapada-qris")!.ok = false;
+  checks.find((item) => item.serviceKey === "sapada-qris-generate")!.ok = false;
   const feed = buildStatusFeed(checks, [], now);
   assert.equal(feed.service.state, "degraded");
   assert.deepEqual(feed.components.map((item) => item.key), ["sapada", "sapada-tte", "sapada-storage", "sapada-payment", "sapada-atr-bpn"]);
@@ -45,7 +45,7 @@ test("payment aggregation preserves failure precedence and the oldest complete h
   assert.equal(buildStatusFeed(checks, [], now).components[3].checkedAt, va.checkedAt.toISOString());
   const partial = checks.filter((item) => item.serviceKey !== "sapada-va-bjb");
   assert.equal(buildStatusFeed(partial, [], now).components[3].state, "unknown");
-  partial.find((item) => item.serviceKey === "sapada-qris")!.ok = false;
+  partial.find((item) => item.serviceKey === "sapada-qris-generate")!.ok = false;
   const failed = buildStatusFeed(partial, [], now).components[3];
   assert.equal(failed.state, "degraded");
   assert.equal(failed.checkedAt, now.toISOString());
@@ -96,4 +96,38 @@ test("incident payment detail distinguishes broad scope from specific and unrela
   assert.deepEqual(specific.incidents[0].affectedComponentKeys, ["sapada-payment", "sapada-tte"]);
   const unrelated = buildStatusFeed(healthy(), [{ ...incident, affectedComponentKeys: ["sapada-tte"] }], now);
   assert.deepEqual(unrelated.incidents[0].affectedPaymentMethodKeys, []);
+});
+
+test("version 2 exposes separate generator and skipped status rows without counting a check", () => {
+  const checks = healthy().filter((item) => item.serviceKey !== "sapada-qris-check");
+  checks.push({ serviceKey: "sapada-qris-check", checkedAt: now, ok: false });
+  const feed = buildStatusFeed(checks, [], now, true, 2);
+  assert.equal(feed.version, 2);
+  assert.equal(feed.service.state, "operational");
+  assert.equal(feed.service.checkedAt, now.toISOString());
+  assert.equal(feed.components[3].state, "operational");
+  assert.deepEqual(feed.paymentMethods.map((item) => [item.key, item.state]), [
+    ["sapada-qris-generate", "operational"], ["sapada-qris-check", "skipped"],
+    ["sapada-va-bjb", "operational"], ["sapada-kode-bayar", "operational"],
+  ]);
+  assert.equal(feed.paymentMethods[1].checkedAt, null);
+  checks.find((item) => item.serviceKey === "sapada-qris-generate")!.ok = false;
+  assert.equal(buildStatusFeed(checks, [], now, true, 2).service.state, "degraded");
+});
+
+test("old combined QRIS results do not become generator observations", () => {
+  const checks = healthy().filter((item) => !item.serviceKey.startsWith("sapada-qris"));
+  checks.push({ serviceKey: "sapada-qris", checkedAt: now, ok: true });
+  assert.equal(buildStatusFeed(checks, [], now, true, 2).paymentMethods[0].state, "unknown");
+});
+
+test("version 1 omits status-only incidents while version 2 retains their specific scope", () => {
+  const incident = { id: 1, title: "Cek status", message: "Catatan", kind: "incident", state: "identified",
+    updatedAt: now, affectedComponentKeys: ["sapada-qris-check"] };
+  assert.equal(buildStatusFeed(healthy(), [incident], now).incidents.length, 0);
+  const feed = buildStatusFeed(healthy(), [incident], now, true, 2);
+  assert.deepEqual(feed.incidents[0].affectedPaymentMethodKeys, ["sapada-qris-check"]);
+  const mixed = buildStatusFeed(healthy(), [{ ...incident, affectedComponentKeys: ["sapada-qris-check", "sapada-tte"] }], now);
+  assert.deepEqual(mixed.incidents[0].affectedComponentKeys, ["sapada-tte"]);
+  assert.deepEqual(mixed.incidents[0].affectedPaymentMethodKeys, []);
 });

@@ -1,11 +1,16 @@
-import { components, legacyPaymentComponent } from "@/lib/components";
+import { components, legacyPaymentComponent, legacyQrisComponent, skippedComponentKeys } from "@/lib/components";
+
+export function incidentAffectsMonitoring(incident: { serviceKey: string; affectedComponentKeys: string[] | null }) {
+  return incident.serviceKey !== "sapada" || !incident.affectedComponentKeys?.length
+    || incident.affectedComponentKeys.some((key) => !skippedComponentKeys.includes(key));
+}
 
 export const sapadaIncidentComponents = [
   { key: "sapada", name: "Situs SAPADA" },
   ...components.filter((component) => component.parentKey === "sapada"),
 ];
 
-const historicalIncidentComponents = [...sapadaIncidentComponents, legacyPaymentComponent];
+const historicalIncidentComponents = [...sapadaIncidentComponents, legacyPaymentComponent, legacyQrisComponent];
 const componentKeys = new Set(historicalIncidentComponents.map((component) => component.key));
 
 export function parseAffectedComponentKeys(serviceKey: string, values: FormDataEntryValue[]) {

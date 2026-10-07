@@ -3,17 +3,20 @@ import { test } from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { buildIncidentObservationQuery, buildIncidentPublicationQuery } from "./automatic-incidents";
-import { components, getComponent, paymentComponentKeys, sapadaHistoryKeys } from "./components";
+import { components, getComponent, monitoredPaymentComponentKeys, paymentComponentKeys, sapadaHistoryKeys } from "./components";
 import { alertFailureName } from "./whatsapp-alerts";
 
 test("current payment labels and historical keys remain distinct", () => {
   assert.deepEqual(components.filter((item) => (paymentComponentKeys as readonly string[]).includes(item.key)).map((item) => item.name),
-    ["QRIS", "Virtual Account BJB", "Kode Bayar"]);
-  assert.equal(components.length, 6);
+    ["Generate QRIS", "Cek Status QRIS", "Virtual Account BJB", "Kode Bayar"]);
+  assert.equal(components.length, 7);
   assert.equal(components.some((item) => String(item.key) === "sapada-payment"), false);
   assert.equal(getComponent("sapada-payment")?.name, "Payment API");
   assert.ok(sapadaHistoryKeys.includes("sapada-payment"));
-  assert.deepEqual(paymentComponentKeys.map(alertFailureName), ["QRIS", "Virtual Account BJB", "Kode Bayar"]);
+  assert.ok(sapadaHistoryKeys.includes("sapada-qris"));
+  assert.ok(!sapadaHistoryKeys.includes("sapada-qris-check"));
+  assert.equal(getComponent("sapada-qris")?.name, "QRIS (gabungan)");
+  assert.deepEqual(paymentComponentKeys.map(alertFailureName), ["Generate QRIS", "Cek Status QRIS", "Virtual Account BJB", "Kode Bayar"]);
   assert.equal(alertFailureName("sapada-payment"), "Payment API");
 });
 
@@ -38,7 +41,7 @@ test("legacy manual incidents cover new payment methods and isolated failures ta
     `);
     for (const minute of [0, 5, 10]) {
       const at = new Date(base.getTime() + minute * 60_000);
-      await run(buildIncidentObservationQuery(paymentComponentKeys.map((serviceKey) => ({ serviceKey, ok: false })), at));
+      await run(buildIncidentObservationQuery(monitoredPaymentComponentKeys.map((serviceKey) => ({ serviceKey, ok: false })), at));
       await run(buildIncidentPublicationQuery(at));
     }
     const covered = await client.query<{ incident_id: number }>("SELECT incident_id FROM monitor_incident_states");
@@ -49,14 +52,22 @@ test("legacy manual incidents cover new payment methods and isolated failures ta
     await client.exec("TRUNCATE incidents, incident_updates, monitor_incident_states RESTART IDENTITY");
     for (const minute of [0, 5, 10]) {
       const at = new Date(base.getTime() + minute * 60_000);
-      await run(buildIncidentObservationQuery(paymentComponentKeys.map((serviceKey) => ({ serviceKey, ok: serviceKey !== "sapada-qris" })), at));
+      await run(buildIncidentObservationQuery(monitoredPaymentComponentKeys.map((serviceKey) => ({ serviceKey, ok: serviceKey !== "sapada-qris-generate" })), at));
       await run(buildIncidentPublicationQuery(at));
     }
     const isolated = await client.query<{ affected_component_keys: string[]; message: string }>("SELECT * FROM incidents");
     assert.equal(isolated.rows.length, 1);
-    assert.deepEqual(isolated.rows[0].affected_component_keys, ["sapada-qris"]);
+    assert.deepEqual(isolated.rows[0].affected_component_keys, ["sapada-qris-generate"]);
     assert.match(isolated.rows[0].message, /QRIS/);
     assert.doesNotMatch(isolated.rows[0].message, /Virtual Account|Kode Bayar/);
+
+    await client.exec("TRUNCATE incidents, incident_updates, monitor_incident_states RESTART IDENTITY");
+    for (const minute of [0, 5, 10]) {
+      const at = new Date(base.getTime() + minute * 60_000);
+      await run(buildIncidentObservationQuery(paymentComponentKeys.map((serviceKey) => ({ serviceKey, ok: serviceKey !== "sapada-qris-check" })), at));
+      await run(buildIncidentPublicationQuery(at));
+    }
+    assert.equal((await client.query("SELECT * FROM incidents")).rows.length, 0);
   } finally {
     await client.close();
   }

@@ -3,7 +3,7 @@ import { getDb } from "./db";
 import { checks, incidents, incidentUpdates } from "./db/schema";
 import { defaultHistoryRange, getHistoryRange, getHistoryWindow } from "./history-range";
 import { services } from "./services";
-import { components, sapadaHistoryKeys } from "./components";
+import { components, monitoredComponents, sapadaHistoryKeys, skippedComponentKeys } from "./components";
 import { rollupSapadaStatus } from "./status-rollup";
 
 export type PublicStatus = "operational" | "degraded" | "unknown";
@@ -16,7 +16,7 @@ export type ServiceStatus = {
   service: (typeof services)[number] | (typeof components)[number];
   displayName?: string;
   isOverall?: boolean;
-  state: PublicStatus;
+  state: PublicStatus | "skipped";
   latest: Check | null;
   history: ServiceHistoryBucket[];
   uptime: number | null;
@@ -35,7 +35,7 @@ const monitors = [...services, ...components] as const;
 function emptyMonitors(bucketCount: number): ServiceStatus[] {
   return monitors.map((service) => ({
     service,
-    state: "unknown",
+    state: skippedComponentKeys.includes(service.key) ? "skipped" : "unknown",
     latest: null,
     history: Array.from({ length: bucketCount }, () => ({ count: 0, failedCount: 0, latestFailure: null })),
     uptime: null,
@@ -74,7 +74,7 @@ export async function getStatusData(range: HistoryRange | null = defaultHistoryR
     }).from(checks).where(and(inArray(checks.serviceKey, sapadaKeys), gte(checks.checkedAt, since), lt(checks.checkedAt, now)))
       .groupBy(checks.checkedAt).as("sapada_runs");
     const [latestRows, aggregateRows, overallRows, recentIncidents] = await Promise.all([
-      Promise.all(monitors.map((service) => db.select().from(checks)
+      Promise.all(monitors.map((service) => skippedComponentKeys.includes(service.key) ? Promise.resolve([] as Check[]) : db.select().from(checks)
         .where(eq(checks.serviceKey, service.key)).orderBy(desc(checks.checkedAt), desc(checks.id)).limit(1))),
       range ? db.select({
         serviceKey: checks.serviceKey,
@@ -90,7 +90,7 @@ export async function getStatusData(range: HistoryRange | null = defaultHistoryR
         bucketIndex: runs.bucketIndex,
         count: sql<number>`count(*)::integer`,
         failedCount: sql<number>`count(*) filter (where ${runs.failed})::integer`,
-        partialCount: sql<number>`count(*) filter (where ${runs.observed} < ${components.length + 1})::integer`,
+        partialCount: sql<number>`count(*) filter (where ${runs.observed} < ${monitoredComponents.length + 1})::integer`,
         latestFailureId: sql<number | null>`(array_agg(${runs.latestFailureId} order by ${runs.checkedAt} desc) filter (where ${runs.failed}))[1]`,
       }).from(runs).groupBy(runs.bucketIndex) : Promise.resolve([] as {
         bucketIndex: number; count: number; failedCount: number; partialCount: number; latestFailureId: number | null;
@@ -108,6 +108,7 @@ export async function getStatusData(range: HistoryRange | null = defaultHistoryR
     const monitorStatuses = monitors.map((service, index): ServiceStatus => {
       const latest = latestRows[index][0] ?? null;
       const history: ServiceHistoryBucket[] = Array.from({ length: range?.buckets ?? 0 }, () => ({ count: 0, failedCount: 0, latestFailure: null }));
+      if (skippedComponentKeys.includes(service.key)) return { service, state: "skipped", latest: null, history, uptime: null };
       for (const row of aggregateRows) {
         if (row.serviceKey !== service.key || row.bucketIndex < 0 || row.bucketIndex >= history.length) continue;
         history[row.bucketIndex] = { count: row.count, failedCount: row.failedCount,
