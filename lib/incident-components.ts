@@ -1,11 +1,12 @@
-import { components } from "@/lib/components";
+import { components, legacyPaymentComponent } from "@/lib/components";
 
 export const sapadaIncidentComponents = [
   { key: "sapada", name: "Situs SAPADA" },
   ...components.filter((component) => component.parentKey === "sapada"),
 ];
 
-const componentKeys = new Set(sapadaIncidentComponents.map((component) => component.key));
+const historicalIncidentComponents = [...sapadaIncidentComponents, legacyPaymentComponent];
+const componentKeys = new Set(historicalIncidentComponents.map((component) => component.key));
 
 export function parseAffectedComponentKeys(serviceKey: string, values: FormDataEntryValue[]) {
   if (serviceKey !== "sapada") return values.length === 0 ? null : undefined;
@@ -18,5 +19,5 @@ export function parseAffectedComponentKeys(serviceKey: string, values: FormDataE
 
 export function affectedComponentNames(keys: string[] | null) {
   if (!keys) return [];
-  return sapadaIncidentComponents.filter((component) => keys.includes(component.key)).map((component) => component.name);
+  return historicalIncidentComponents.filter((component) => keys.includes(component.key)).map((component) => component.name);
 }

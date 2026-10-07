@@ -2,12 +2,15 @@
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { sapadaIncidentComponents } from "@/lib/incident-components";
+import { legacyPaymentComponent } from "@/lib/components";
 
 export function AdminComponentCheckboxes({ defaultSelected = [] }: { defaultSelected?: string[] }) {
+  const options = defaultSelected.includes(legacyPaymentComponent.key)
+    ? [...sapadaIncidentComponents, legacyPaymentComponent] : sapadaIncidentComponents;
   return <fieldset className="admin-component-fieldset">
     <legend>Komponen terdampak</legend>
     <p>Pilih komponen SAPADA yang mengalami gangguan atau pemeliharaan.</p>
-    <div className="admin-component-options">{sapadaIncidentComponents.map((component) => <label key={component.key} className="admin-component-option">
+    <div className="admin-component-options">{options.map((component) => <label key={component.key} className="admin-component-option">
       <Checkbox name="componentKeys" value={component.key} defaultChecked={defaultSelected.includes(component.key)} aria-label={component.name} />
       <span>{component.name}</span>
     </label>)}</div>

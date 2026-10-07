@@ -47,7 +47,11 @@ Pesan ini dikirim otomatis oleh sistem.
 
 Apply the database migration and set `WHATSAPP_BIZ_OCA_ENDPOINT`, `WHATSAPP_BIZ_OCA_TOKEN`, and `WHATSAPP_BIZ_OCA_TEMPLATE_CODE_STATUS_ALERT=marketing:peringatan_gangguan_layanan_bapenda` in Vercel production. Add recipients in `/admin` using international format, such as `6281234567890`. Keep the token and real recipient numbers out of Git. Alerts require all three OCA settings and an active recipient. Initial failures go through the same five-minute confirmation. The spam-prevention migration preserves existing failure notifications so deployment does not resend them. Review the admin delivery table after the first live alert. “Diterima OCA” confirms provider acceptance, not delivery to the handset.
 
-The SAPADA section has five components: its public website, TTE, Storage, Payment API, and ATR BPN API. The parent row reports their combined status. It is degraded if any component fails, unknown if a component has no recent result and none fails, and operational only if all five are healthy. Its history and uptime include every monitoring run with at least one recorded component, including older website-only runs. A run succeeds when all observed components pass and fails when any observed component fails. Tooltips identify runs with partial component coverage, and bar details list all available checks for that period. The status app calls SAPADA's protected, read only `/api/internal/integration-health` route because the VPN endpoints cannot be reached from Vercel. Set `INTEGRATION_HEALTH_TOKEN` to a random 64-character hexadecimal signing seed in Vercel production. Sapada verifies short lived Ed25519 signatures with a public key in its code; no signing secret is needed on the SAPADA server. Without the seed, integration components remain unknown and no integration checks are recorded. A failed or malformed probe response records failures for all four integration components. Payment API is healthy only when all four payment VPN routes accept a TCP connection. This proves network reachability, not that a payment transaction succeeds. SAPADA checks its inbound ATR BPN API with an unauthenticated POST and expects the route's Basic Auth challenge. This confirms route and auth guard reachability without sending credentials or taxpayer data; it does not prove that a business lookup succeeds. No provider URL or credential appears on the public status page.
+The SAPADA section has seven components: its public website, TTE, Storage, QRIS, Virtual Account BJB, Kode Bayar, and ATR BPN API. The parent row is degraded if any component fails, unknown if a component has no recent result and none fails, and operational when all seven are healthy. Each payment method has its own checks, history, alert state and incident selection. Old `sapada-payment` checks remain in the combined SAPADA history and check details. They are never copied into the new payment histories because they cannot identify which method failed. Existing Payment API incidents remain readable and editable, and an active manual incident covering that old key suppresses duplicate automatic incidents for all three payment methods.
+
+The status app calls SAPADA's protected, read only `/api/internal/integration-health?version=2` route because the VPN endpoints cannot be reached from Vercel. QRIS requires TCP connections to both its generator and status services; Virtual Account BJB checks its own TCP endpoint. Kode Bayar checks both inbound bank inquiry and payment handlers with empty, unauthenticated POST requests and requires their specific authentication error. It also requires the bank VPN listener to reject unauthenticated GET requests for both paths with HTTP 403. These checks send no credentials or taxpayer data and create no payments. They verify local handlers and the local VPN listener, not the complete network path from the bank or successful settlement. The unrelated PBB endpoint is excluded from these three monitors. No provider URL or credential appears on the public status page.
+
+Deploy SAPADA's version 2 probe before this status app. SAPADA's default probe keeps the legacy four-result contract for old monitors. If the status app receives that legacy response during rollout or rollback, TTE, Storage and ATR BPN results are retained while the three payment methods remain unknown. A missing signing seed records no integration checks; a failed or malformed probe response records failures for all six integration components. `INTEGRATION_HEALTH_TOKEN` remains the existing Ed25519 signing seed in Vercel, and SAPADA still verifies signatures with its public key. No new secret or database migration is needed. The focused checks are `node --import tsx --test lib/component-checks.test.ts lib/payment-components.test.ts lib/status-feed.test.ts lib/incident-components.test.ts` and `node node_modules/typescript/bin/tsc --noEmit -p tsconfig.payment-components.json`.
 
 Open `/admin` and sign in with `ADMIN_PASSWORD` to publish a disruption or planned maintenance for one service or all services in a single update. The page uses `SESSION_SECRET` to sign its session cookie. Every stage change requires a public note and creates a dated update. The homepage highlights active updates, `/history` lists earlier events, `/incidents/:id` shows each timeline and affected services, and `/rss.xml` publishes official updates. The migration assigns existing SAPADA checks and updates to the SAPADA service.
 
@@ -70,7 +74,7 @@ On the current Vercel Hobby plan, each Cron job runs once per day with timing pr
 ## SAPADA in-app notices
 
 `GET /api/status` is the public version 1 JSON feed for SAPADA's in-app notices.
-It returns the combined SAPADA state, the five component states and check times,
+It returns the combined SAPADA state, the five version 1 component states and check times,
 and all active incidents targeting SAPADA or all services. Incident messages use
 the latest public update belonging to that incident, ordered by update time and
 then update ID. The query builder preserves the outer incident ID in the
@@ -78,7 +82,18 @@ correlated subquery; inline SQL in a single-table projection can lose table
 qualifiers and select an unrelated incident's message. Resolved events and incidents for other services are
 excluded. Queries read only the latest check per component and active incidents,
 without history aggregation or a recent-event limit that could hide an older
-active incident.
+active incident. Version 1 preserves the `sapada-payment` key by combining the three
+independent payment states, with failures taking precedence over unknown states.
+Payment incident keys are projected to that same legacy key so existing SAPADA
+notices keep accepting the feed. Public page rows and automation retain the
+independent payment keys.
+
+The additive `paymentMethods` array exposes QRIS, Virtual Account BJB and Kode
+Bayar states and check times. Incidents also include `affectedPaymentMethodKeys`:
+specific payment keys for method incidents, an empty array for unrelated incidents,
+and `null` for whole-service or general payment incidents. SAPADA uses these
+details to name affected methods in its banner; legacy feeds and broad payment
+incidents keep the label "Pembayaran." Its reader rechecks each method's freshness.
 
 The response excludes provider URLs, probe errors, credentials and recipient
 data. Its CDN cache lasts 30 seconds, with no stale response window. Failed data

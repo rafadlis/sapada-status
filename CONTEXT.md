@@ -15,6 +15,10 @@ The combined health of the SAPADA website and all its monitored integrations. It
 
 The historical parent chart includes every recorded monitoring run, even when older runs only checked the website. A run fails if any observed component fails. Missing components do not remove a run from history. Tooltips identify runs that cover only some components; historical percentages describe the components observed at that time.
 
+Payments have separate QRIS, Virtual Account BJB and Kode Bayar monitors. Old Payment API observations remain in SAPADA's combined history without becoming method-specific observations. The public version 1 feed aggregates the three payment states into its existing Payment API key for SAPADA compatibility. The protected probe requests version 2; an older probe leaves the three payment states unknown while retaining its other results. Kode Bayar monitors the local bank inquiry/payment guards and VPN listener, without sending credentials or creating a payment. It does not prove the bank's complete network path or settlement.
+
+The public feed adds `paymentMethods` observations and incident `affectedPaymentMethodKeys` without changing its five legacy components. SAPADA notices name QRIS, Virtual Account BJB or Kode Bayar when specific details are available, and retain "Pembayaran" for broad or legacy payment incidents.
+
 History bar colors summarize the success rate within each bucket. Green means at least 99% of observed checks succeeded, yellow means some succeeded but the rate is below 99%, red means every recorded check failed, and gray means no observations. Tooltips retain exact failure counts even on green bars. This visual threshold does not change the recorded checks, uptime calculation, current status, incident confirmation, or WhatsApp alert policy.
 
 **Informasi layanan**:

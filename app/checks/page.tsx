@@ -11,7 +11,7 @@ import { checks } from "@/lib/db/schema";
 import { defaultHistoryRange, getHistoryRange } from "@/lib/history-range";
 import { formatJakarta } from "@/lib/status";
 import { getService, services } from "@/lib/services";
-import { components, getComponent } from "@/lib/components";
+import { getComponent, sapadaHistoryKeys } from "@/lib/components";
 
 export const metadata: Metadata = {
   title: "Detail pemeriksaan",
@@ -57,7 +57,7 @@ async function ChecksContent({ searchParams }: ChecksProps) {
   if (valid && service) {
     try {
       const db = getDb();
-      const sapadaKeys = [services[0].key, ...components.map((component) => component.key)];
+      const sapadaKeys = sapadaHistoryKeys;
       const result = await db.select().from(checks)
         .where(and(overall ? inArray(checks.serviceKey, sapadaKeys) : eq(checks.serviceKey, service.key), gte(checks.checkedAt, new Date(from)), lt(checks.checkedAt, new Date(to))))
         .orderBy(desc(checks.checkedAt), desc(checks.id))
