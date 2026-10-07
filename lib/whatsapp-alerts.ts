@@ -1,7 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { whatsappAlertRecipients } from "@/lib/db/schema";
-import { components } from "@/lib/components";
+import { getComponent } from "@/lib/components";
 import { services } from "@/lib/services";
 
 export type AlertFailure = { serviceKey: string; statusCode: number | null };
@@ -42,7 +42,7 @@ export function parseAlertRecipient(raw: string) {
 
 export function alertFailureName(key: string) {
   return services.find((service) => service.key === key)?.name
-    ?? components.find((component) => component.key === key)?.name ?? key;
+    ?? getComponent(key)?.name ?? key;
 }
 
 export function alertBodyValues(failures: AlertFailure[], checkedAt: Date) {

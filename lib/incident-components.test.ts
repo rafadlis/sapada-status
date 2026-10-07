@@ -7,6 +7,12 @@ test("SAPADA incidents preserve only the explicitly selected components", () => 
   assert.deepEqual(affectedComponentNames(["sapada-payment", "sapada-tte"]), ["TTE", "Payment API"]);
 });
 
+test("each payment method can be selected independently", () => {
+  assert.deepEqual(parseAffectedComponentKeys("sapada", ["sapada-kode-bayar"]), ["sapada-kode-bayar"]);
+  assert.deepEqual(affectedComponentNames(["sapada-qris", "sapada-va-bjb", "sapada-kode-bayar"]),
+    ["QRIS", "Virtual Account BJB", "Kode Bayar"]);
+});
+
 test("SAPADA incidents reject an empty, unknown, or duplicate component selection", () => {
   assert.equal(parseAffectedComponentKeys("sapada", []), undefined);
   assert.equal(parseAffectedComponentKeys("sapada", ["unknown"]), undefined);

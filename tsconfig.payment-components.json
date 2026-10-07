@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "incremental": false },
+  "files": [
+    "node_modules/next/types/global.d.ts",
+    "lib/component-checks.ts", "lib/component-checks.test.ts",
+    "lib/status-feed.ts", "lib/status-feed.test.ts",
+    "lib/incident-components.ts", "lib/incident-components.test.ts",
+    "lib/automatic-incidents.ts", "lib/automatic-incidents.test.ts",
+    "lib/status.ts", "lib/payment-components.test.ts", "lib/whatsapp-alerts.ts",
+    "app/checks/page.tsx", "components/admin-component-checkboxes.tsx"
+  ],
+  "include": []
+}

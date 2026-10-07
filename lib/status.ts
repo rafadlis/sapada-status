@@ -3,7 +3,7 @@ import { getDb } from "./db";
 import { checks, incidents, incidentUpdates } from "./db/schema";
 import { defaultHistoryRange, getHistoryRange, getHistoryWindow } from "./history-range";
 import { services } from "./services";
-import { components } from "./components";
+import { components, sapadaHistoryKeys } from "./components";
 import { rollupSapadaStatus } from "./status-rollup";
 
 export type PublicStatus = "operational" | "degraded" | "unknown";
@@ -64,7 +64,7 @@ export async function getStatusData(range: HistoryRange | null = defaultHistoryR
     const since = window?.start ?? now;
     const bucketMs = window?.bucketMs ?? 0;
     const bucketIndex = sql<number>`floor((extract(epoch from ${checks.checkedAt}) * 1000 - ${since.getTime()}) / ${bucketMs || 1})::integer`;
-    const sapadaKeys = [services[0].key, ...components.map((component) => component.key)];
+    const sapadaKeys = sapadaHistoryKeys;
     const runs = db.select({
       checkedAt: checks.checkedAt,
       bucketIndex: bucketIndex.as("bucket_index"),
@@ -90,7 +90,7 @@ export async function getStatusData(range: HistoryRange | null = defaultHistoryR
         bucketIndex: runs.bucketIndex,
         count: sql<number>`count(*)::integer`,
         failedCount: sql<number>`count(*) filter (where ${runs.failed})::integer`,
-        partialCount: sql<number>`count(*) filter (where ${runs.observed} < ${sapadaKeys.length})::integer`,
+        partialCount: sql<number>`count(*) filter (where ${runs.observed} < ${components.length + 1})::integer`,
         latestFailureId: sql<number | null>`(array_agg(${runs.latestFailureId} order by ${runs.checkedAt} desc) filter (where ${runs.failed}))[1]`,
       }).from(runs).groupBy(runs.bucketIndex) : Promise.resolve([] as {
         bucketIndex: number; count: number; failedCount: number; partialCount: number; latestFailureId: number | null;

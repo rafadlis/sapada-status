@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { services } from "@/lib/services";
 import { sapadaIncidentComponents } from "@/lib/incident-components";
+import { legacyPaymentComponent, paymentComponentKeys } from "@/lib/components";
 
 export const automaticIncidentPolicy = {
   confirmationMinutes: 10,
@@ -61,7 +62,9 @@ export function buildIncidentPublicationQuery(at: Date) {
         WHERE incident.state <> 'resolved' AND (incident.kind = 'incident' OR incident.state = 'in_progress') AND (
           (incident.service_key = catalog.parent AND incident.automatic)
           OR (incident.service_key IN (catalog.parent, 'all') AND (
-            incident.affected_component_keys IS NULL OR incident.affected_component_keys ? catalog.key))
+            incident.affected_component_keys IS NULL OR incident.affected_component_keys ? catalog.key
+            OR (catalog.key IN (${sql.join(paymentComponentKeys.map((key) => sql`${key}`), sql`, `)})
+              AND incident.affected_component_keys ? ${legacyPaymentComponent.key})))
         ) ORDER BY incident.automatic, incident.id LIMIT 1
       ) AS existing ON true
       WHERE NOT state.ok AND state.incident_id IS NULL AND state.checked_at = ${at}::timestamptz

@@ -1,4 +1,4 @@
-import { components } from "./components";
+import { components, legacyPaymentComponent, paymentComponentKeys } from "./components";
 import { isIncidentKind, isValidIncidentState } from "./incident";
 
 const monitorKeys = ["sapada", ...components.map((item) => item.key)];
@@ -37,6 +37,19 @@ export function buildStatusFeed(
     : monitors.some((item) => item.state === "unknown")
       ? "unknown"
       : "operational";
+  // SAPADA's version 1 reader requires exactly five keys. Aggregate only here;
+  // the status page, stored checks and automation use the independent monitors.
+  const payments = monitors.filter((item) => (paymentComponentKeys as readonly string[]).includes(item.key));
+  const paymentDates = payments.flatMap((item) => item.checkedAt ? [item.checkedAt] : []);
+  const failedDates = payments.flatMap((item) => item.state === "degraded" && item.checkedAt ? [item.checkedAt] : []);
+  const payment = {
+    key: legacyPaymentComponent.key,
+    state: payments.some((item) => item.state === "degraded") ? "degraded"
+      : payments.some((item) => item.state === "unknown") ? "unknown" : "operational",
+    checkedAt: failedDates.length ? failedDates.sort()[0]
+      : paymentDates.length === payments.length ? paymentDates.sort()[0] : null,
+  };
+  const publicMonitors = [monitors[0], monitors[1], monitors[2], payment, monitors[6]];
   const dates = monitors.flatMap((item) =>
     item.checkedAt ? [item.checkedAt] : [],
   );
@@ -48,7 +61,8 @@ export function buildStatusFeed(
       state,
       checkedAt: dates.length === monitorKeys.length ? dates.sort()[0] : null,
     },
-    components: monitors,
+    components: publicMonitors,
+    paymentMethods: payments,
     incidents: available
       ? incidents
           .filter(
@@ -64,7 +78,14 @@ export function buildStatusFeed(
             kind: item.kind,
             state: item.state,
             updatedAt: item.updatedAt.toISOString(),
-            affectedComponentKeys: item.affectedComponentKeys,
+            affectedComponentKeys: item.affectedComponentKeys === null ? null
+              : [...new Set(item.affectedComponentKeys.map((key) =>
+                (paymentComponentKeys as readonly string[]).includes(key) ? legacyPaymentComponent.key : key))],
+            // A broad payment or whole-service incident must keep its broad scope.
+            affectedPaymentMethodKeys: item.affectedComponentKeys === null ||
+              item.affectedComponentKeys.includes(legacyPaymentComponent.key) ? null
+              : [...new Set(item.affectedComponentKeys.filter((key) =>
+                (paymentComponentKeys as readonly string[]).includes(key)))],
           }))
       : [],
   };
