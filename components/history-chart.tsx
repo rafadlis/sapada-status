@@ -43,6 +43,10 @@ function ServiceHistoryRow({ service, range, now, afterName }: {
   const publicService = getService(service.service.key);
   const name = service.displayName ?? service.service.name;
   const overall = service.isOverall === true;
+  if (service.state === "skipped") return <div className="reference-service" aria-label={`${name}: Dilewati`}>
+    <div className="reference-service-head"><div><span className="reference-service-icon status-unknown" aria-hidden="true">–</span><strong>{name}</strong></div><span className="reference-uptime">Dilewati</span></div>
+    <p className="reference-disclaimer">Pemeriksaan status QRIS sementara dilewati. Tidak memengaruhi status keseluruhan atau waktu aktif.</p>
+  </div>;
   const stateLabel = service.state === "operational" ? "Beroperasi" : service.state === "degraded" ? "Terganggu" : "Belum diketahui";
   const uptimeHint = overall ? "Persentase putaran saat semua komponen yang diperiksa berhasil. Riwayat lama dapat mencakup sebagian komponen." : "Persentase pemeriksaan yang berhasil selama rentang terpilih";
 

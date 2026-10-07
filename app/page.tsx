@@ -9,6 +9,7 @@ import { SiteFooter, SiteHeader } from "@/components/site-header";
 import { PageLoading } from "@/components/page-loading";
 import { getHistoryRange } from "@/lib/history-range";
 import { incidentAffectsService } from "@/lib/incident-service";
+import { incidentAffectsMonitoring } from "@/lib/incident-components";
 import { getStatusData } from "@/lib/status";
 import { absoluteUrl, pageMetadata, serializeJsonLd, siteDescription, siteName } from "@/lib/seo";
 
@@ -53,18 +54,19 @@ async function LiveStatus({ range }: { range: ReturnType<typeof getHistoryRange>
   const now = new Date();
   const data = await getStatusData(range, now);
   const active = data.incidents.filter((incident) => incident.state !== "resolved");
+  const monitoredIncidents = active.filter(incidentAffectsMonitoring);
   const serviceStatuses = data.services.map((service) => ({
     ...service,
-    state: active.some((incident) => incidentAffectsService(incident.serviceKey, service.service.key) && incident.kind !== "maintenance") ? "degraded" as const : service.state,
+    state: monitoredIncidents.some((incident) => incidentAffectsService(incident.serviceKey, service.service.key) && incident.kind !== "maintenance") ? "degraded" as const : service.state,
   }));
-  const hasDisruption = active.some((incident) => incident.kind !== "maintenance");
+  const hasDisruption = monitoredIncidents.some((incident) => incident.kind !== "maintenance");
   const state = hasDisruption || data.state === "degraded" ? "degraded" : data.state;
   const copy = state === "degraded" ? { title: "Layanan sedang terganggu", detail: "Satu atau lebih layanan atau integrasi bermasalah. Lihat status tiap komponen dan pembaruan pengelola di bawah." }
     : state === "operational" ? { title: "Semua layanan beroperasi", detail: "Tidak ada gangguan yang diketahui pada layanan dan integrasi yang dipantau." }
       : { title: "Status belum dapat dipastikan", detail: "Setidaknya satu layanan atau integrasi belum memiliki pemeriksaan terbaru. Status akan diperbarui setelah pemeriksaan berikutnya." };
 
   return <main className="site-width reference-main">
-    <section className={`reference-overall overall-${state}`} aria-label="Kondisi layanan saat ini"><div className="reference-overall-head"><span className="reference-overall-icon" aria-hidden="true">{state === "operational" ? "✓" : state === "degraded" ? "!" : "?"}</span><h1>{copy.title}</h1></div><div className="reference-overall-body"><p>{copy.detail}</p>{active[0] && <Link href={`/incidents/${active[0].id}`}>{active[0].title}</Link>}</div></section>
+    <section className={`reference-overall overall-${state}`} aria-label="Kondisi layanan saat ini"><div className="reference-overall-head"><span className="reference-overall-icon" aria-hidden="true">{state === "operational" ? "✓" : state === "degraded" ? "!" : "?"}</span><h1>{copy.title}</h1></div><div className="reference-overall-body"><p>{copy.detail}</p>{monitoredIncidents[0] && <Link href={`/incidents/${monitoredIncidents[0].id}`}>{monitoredIncidents[0].title}</Link>}</div></section>
 
     <HistoryChart services={serviceStatuses} components={data.components} selectedRange={range.key} now={now} />
     <div className="reference-history-action"><Link href="/history">Lihat riwayat pembaruan</Link></div>

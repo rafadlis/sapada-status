@@ -5,8 +5,9 @@ import { checks } from "@/lib/db/schema";
 import { buildStatusFeed, statusFeedMonitorKeys } from "@/lib/status-feed";
 import { activeStatusIncidentsQuery } from "@/lib/status-feed-query";
 
-export async function GET() {
+export async function GET(request: Request) {
   await connection();
+  const version = new URL(request.url).searchParams.get("version") === "2" ? 2 : 1;
   try {
     const db = getDb();
     const [latest, activeIncidents] = await Promise.all([
@@ -21,14 +22,14 @@ export async function GET() {
         .orderBy(checks.serviceKey, desc(checks.checkedAt), desc(checks.id)),
       activeStatusIncidentsQuery(db),
     ]);
-    return Response.json(buildStatusFeed(latest, activeIncidents), {
+    return Response.json(buildStatusFeed(latest, activeIncidents, new Date(), true, version), {
       headers: {
         "Cache-Control": "public, max-age=0, s-maxage=30, must-revalidate",
       },
     });
   } catch {
     console.error("Failed to load public SAPADA status feed");
-    return Response.json(buildStatusFeed([], [], new Date(), false), {
+    return Response.json(buildStatusFeed([], [], new Date(), false, version), {
       status: 503,
       headers: { "Cache-Control": "no-store" },
     });

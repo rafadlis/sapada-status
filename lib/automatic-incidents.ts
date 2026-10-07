@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { services } from "@/lib/services";
 import { sapadaIncidentComponents } from "@/lib/incident-components";
-import { legacyPaymentComponent, paymentComponentKeys } from "@/lib/components";
+import { legacyPaymentComponent, legacyQrisComponent, paymentComponentKeys, skippedComponentKeys } from "@/lib/components";
 
 export const automaticIncidentPolicy = {
   confirmationMinutes: 10,
@@ -15,7 +15,7 @@ export const automaticIncidentPolicy = {
 
 type Observation = { serviceKey: string; ok: boolean };
 const catalog = services.flatMap<{ key: string; parent: string; name: string; parentName: string }>((service) => service.key === "sapada"
-  ? sapadaIncidentComponents.map((component) => ({ key: component.key, parent: service.key, name: component.name, parentName: service.name }))
+  ? sapadaIncidentComponents.filter((component) => !skippedComponentKeys.includes(component.key)).map((component) => ({ key: component.key, parent: service.key, name: component.name, parentName: service.name }))
   : [{ key: service.key, parent: service.key, name: service.name, parentName: service.name }]);
 
 // All schedulers take the same transaction lock before reading or changing incident state.
@@ -63,6 +63,7 @@ export function buildIncidentPublicationQuery(at: Date) {
           (incident.service_key = catalog.parent AND incident.automatic)
           OR (incident.service_key IN (catalog.parent, 'all') AND (
             incident.affected_component_keys IS NULL OR incident.affected_component_keys ? catalog.key
+            OR (catalog.key = 'sapada-qris-generate' AND incident.affected_component_keys ? ${legacyQrisComponent.key})
             OR (catalog.key IN (${sql.join(paymentComponentKeys.map((key) => sql`${key}`), sql`, `)})
               AND incident.affected_component_keys ? ${legacyPaymentComponent.key})))
         ) ORDER BY incident.automatic, incident.id LIMIT 1

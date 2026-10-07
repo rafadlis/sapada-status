@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { affectedComponentNames, parseAffectedComponentKeys } from "./incident-components";
+import { affectedComponentNames, incidentAffectsMonitoring, parseAffectedComponentKeys } from "./incident-components";
+
+test("skipped-only incidents do not override current monitored health", () => {
+  assert.equal(incidentAffectsMonitoring({ serviceKey: "sapada", affectedComponentKeys: ["sapada-qris-check"] }), false);
+  assert.equal(incidentAffectsMonitoring({ serviceKey: "sapada", affectedComponentKeys: ["sapada-qris-check", "sapada-qris-generate"] }), true);
+  assert.equal(incidentAffectsMonitoring({ serviceKey: "sapada", affectedComponentKeys: null }), true);
+  assert.equal(incidentAffectsMonitoring({ serviceKey: "all", affectedComponentKeys: null }), true);
+});
 
 test("SAPADA incidents preserve only the explicitly selected components", () => {
   assert.deepEqual(parseAffectedComponentKeys("sapada", ["sapada-payment", "sapada-tte"]), ["sapada-payment", "sapada-tte"]);
@@ -9,8 +16,9 @@ test("SAPADA incidents preserve only the explicitly selected components", () => 
 
 test("each payment method can be selected independently", () => {
   assert.deepEqual(parseAffectedComponentKeys("sapada", ["sapada-kode-bayar"]), ["sapada-kode-bayar"]);
-  assert.deepEqual(affectedComponentNames(["sapada-qris", "sapada-va-bjb", "sapada-kode-bayar"]),
-    ["QRIS", "Virtual Account BJB", "Kode Bayar"]);
+  assert.deepEqual(affectedComponentNames(["sapada-qris-generate", "sapada-qris-check", "sapada-va-bjb", "sapada-kode-bayar"]),
+    ["Generate QRIS", "Cek Status QRIS", "Virtual Account BJB", "Kode Bayar"]);
+  assert.deepEqual(affectedComponentNames(["sapada-qris"]), ["QRIS (gabungan)"]);
 });
 
 test("SAPADA incidents reject an empty, unknown, or duplicate component selection", () => {

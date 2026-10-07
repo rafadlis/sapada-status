@@ -40,7 +40,7 @@ test("PostgreSQL: confirm, group, expand, preserve edits and suppress repeats", 
   for (const minute of [0, 5, 10, 10, 9, 15, 20]) {
     if (minute === 15) statements.push(db.query("UPDATE incidents SET title = 'Judul diperiksa', state = 'identified', title_review_required = false"));
     statements.push(compile(buildIncidentObservationQuery([
-      { serviceKey: "sapada", ok: false }, { serviceKey: "sapada-qris", ok: false },
+      { serviceKey: "sapada", ok: false }, { serviceKey: "sapada-qris-generate", ok: false },
       ...(minute >= 10 ? [{ serviceKey: "sapada-storage", ok: false }] : []),
     ], at(minute))));
     statements.push(compile(buildIncidentPublicationQuery(at(minute))));
@@ -54,7 +54,7 @@ test("PostgreSQL: confirm, group, expand, preserve edits and suppress repeats", 
   assert.equal(rows[18].length, 1);
   assert.equal(rows[18][0].title, "Judul diperiksa");
   assert.equal(rows[18][0].state, "identified");
-  assert.deepEqual(rows[18][0].affected_component_keys.sort(), ["sapada", "sapada-qris", "sapada-storage"]);
+  assert.deepEqual(rows[18][0].affected_component_keys.sort(), ["sapada", "sapada-qris-generate", "sapada-storage"]);
   assert.equal(rows[19].length, 2);
 });
 
@@ -85,7 +85,7 @@ test("PostgreSQL: covered manual incidents suppress duplicates; scheduled future
   ];
   for (const minute of [0, 5, 10, 15]) {
     statements.push(compile(buildIncidentObservationQuery([
-      { serviceKey: "sapada-qris", ok: false }, { serviceKey: "struk-berhadiah", ok: false },
+      { serviceKey: "sapada-qris-generate", ok: false }, { serviceKey: "struk-berhadiah", ok: false },
     ], at(minute))));
     statements.push(compile(buildIncidentPublicationQuery(at(minute))));
   }
