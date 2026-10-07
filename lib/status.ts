@@ -32,6 +32,11 @@ export type StatusData = {
 
 const monitors = [...services, ...components] as const;
 
+export function countMonitoredSapadaChecks() {
+  const keys = ["sapada", ...monitoredComponents.map((component) => component.key)];
+  return sql<number>`count(distinct ${checks.serviceKey}) filter (where ${inArray(checks.serviceKey, keys)})::integer`;
+}
+
 function emptyMonitors(bucketCount: number): ServiceStatus[] {
   return monitors.map((service) => ({
     service,
@@ -68,7 +73,7 @@ export async function getStatusData(range: HistoryRange | null = defaultHistoryR
     const runs = db.select({
       checkedAt: checks.checkedAt,
       bucketIndex: bucketIndex.as("bucket_index"),
-      observed: sql<number>`count(distinct ${checks.serviceKey})::integer`.as("observed"),
+      observed: countMonitoredSapadaChecks().as("observed"),
       failed: sql<boolean>`bool_or(${checks.ok} = false)`.as("failed"),
       latestFailureId: sql<number | null>`(array_agg(${checks.id} order by ${checks.id} desc) filter (where ${checks.ok} = false))[1]`.as("latest_failure_id"),
     }).from(checks).where(and(inArray(checks.serviceKey, sapadaKeys), gte(checks.checkedAt, since), lt(checks.checkedAt, now)))

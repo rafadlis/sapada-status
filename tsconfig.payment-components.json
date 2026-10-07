@@ -8,7 +8,7 @@
     "lib/incident-components.ts", "lib/incident-components.test.ts",
     "lib/automatic-incidents.ts", "lib/automatic-incidents.test.ts",
     "lib/status.ts", "lib/status-rollup.ts", "lib/status-rollup.test.ts", "lib/payment-components.test.ts", "lib/whatsapp-alerts.ts",
-    "lib/qris-monitoring.test.tsx", "app/api/status/route.ts", "app/page.tsx",
+    "lib/qris-monitoring.test.tsx", "lib/status-history-coverage.test.ts", "app/api/status/route.ts", "app/page.tsx",
     "app/checks/page.tsx", "components/admin-component-checkboxes.tsx", "components/history-chart.tsx"
   ],
   "include": []

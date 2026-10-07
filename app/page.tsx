@@ -66,7 +66,7 @@ async function LiveStatus({ range }: { range: ReturnType<typeof getHistoryRange>
       : { title: "Status belum dapat dipastikan", detail: "Setidaknya satu layanan atau integrasi belum memiliki pemeriksaan terbaru. Status akan diperbarui setelah pemeriksaan berikutnya." };
 
   return <main className="site-width reference-main">
-    <section className={`reference-overall overall-${state}`} aria-label="Kondisi layanan saat ini"><div className="reference-overall-head"><span className="reference-overall-icon" aria-hidden="true">{state === "operational" ? "✓" : state === "degraded" ? "!" : "?"}</span><h1>{copy.title}</h1></div><div className="reference-overall-body"><p>{copy.detail}</p>{active[0] && <Link href={`/incidents/${active[0].id}`}>{active[0].title}</Link>}</div></section>
+    <section className={`reference-overall overall-${state}`} aria-label="Kondisi layanan saat ini"><div className="reference-overall-head"><span className="reference-overall-icon" aria-hidden="true">{state === "operational" ? "✓" : state === "degraded" ? "!" : "?"}</span><h1>{copy.title}</h1></div><div className="reference-overall-body"><p>{copy.detail}</p>{monitoredIncidents[0] && <Link href={`/incidents/${monitoredIncidents[0].id}`}>{monitoredIncidents[0].title}</Link>}</div></section>
 
     <HistoryChart services={serviceStatuses} components={data.components} selectedRange={range.key} now={now} />
     <div className="reference-history-action"><Link href="/history">Lihat riwayat pembaruan</Link></div>
