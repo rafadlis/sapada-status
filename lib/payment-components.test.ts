@@ -49,6 +49,19 @@ test("legacy manual incidents cover new payment methods and isolated failures ta
     assert.equal((await client.query("SELECT * FROM incidents")).rows.length, 1);
     assert.equal((await client.query("SELECT * FROM incident_updates")).rows.length, 0);
 
+    await client.exec(`TRUNCATE incidents, incident_updates, monitor_incident_states RESTART IDENTITY;
+      INSERT INTO incidents (service_key, affected_component_keys, title, message)
+        VALUES ('sapada', '["sapada-qris"]', 'Gangguan QRIS', 'Catatan');`);
+    for (const minute of [0, 5, 10]) {
+      const at = new Date(base.getTime() + minute * 60_000);
+      await run(buildIncidentObservationQuery(monitoredPaymentComponentKeys.map((serviceKey) => ({ serviceKey, ok: serviceKey !== "sapada-qris-generate" })), at));
+      await run(buildIncidentPublicationQuery(at));
+    }
+    const qrisCovered = await client.query<{ incident_id: number }>("SELECT incident_id FROM monitor_incident_states WHERE service_key = 'sapada-qris-generate'");
+    assert.equal(qrisCovered.rows[0].incident_id, 1);
+    assert.equal((await client.query("SELECT * FROM incidents")).rows.length, 1);
+    assert.equal((await client.query("SELECT * FROM incident_updates")).rows.length, 0);
+
     await client.exec("TRUNCATE incidents, incident_updates, monitor_incident_states RESTART IDENTITY");
     for (const minute of [0, 5, 10]) {
       const at = new Date(base.getTime() + minute * 60_000);

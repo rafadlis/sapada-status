@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { services } from "@/lib/services";
 import { sapadaIncidentComponents } from "@/lib/incident-components";
-import { legacyPaymentComponent, paymentComponentKeys, skippedComponentKeys } from "@/lib/components";
+import { legacyPaymentComponent, legacyQrisComponent, paymentComponentKeys, skippedComponentKeys } from "@/lib/components";
 
 export const automaticIncidentPolicy = {
   confirmationMinutes: 10,
@@ -63,6 +63,7 @@ export function buildIncidentPublicationQuery(at: Date) {
           (incident.service_key = catalog.parent AND incident.automatic)
           OR (incident.service_key IN (catalog.parent, 'all') AND (
             incident.affected_component_keys IS NULL OR incident.affected_component_keys ? catalog.key
+            OR (catalog.key = 'sapada-qris-generate' AND incident.affected_component_keys ? ${legacyQrisComponent.key})
             OR (catalog.key IN (${sql.join(paymentComponentKeys.map((key) => sql`${key}`), sql`, `)})
               AND incident.affected_component_keys ? ${legacyPaymentComponent.key})))
         ) ORDER BY incident.automatic, incident.id LIMIT 1
